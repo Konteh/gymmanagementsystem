@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  super_admin
+  gym_owner
+  member
+}
+
+enum UserStatus {
+  active
+  pending
+  suspended
+  deleted
+}
+
+enum GymStatus {
+  pending
+  active
+  rejected
+  suspended
+}
+
+enum MemberStatus {
+  active
+  inactive
+  expired
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  role         UserRole
+  status       UserStatus @default(active)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  ownedGym          Gym?
+  gymAdmins         GymAdmin[]
+  memberProfile     Member?
+  platformPayments  PaymentPlatform[]
+  actorLogs         AuditLog[]        @relation("ActorLogs")
+  settingsUpdates   SystemSetting[]
+  refreshTokens     RefreshToken[]
+
+  @@index([email])
+}
+
+model Gym {
+  id           String    @id @default(uuid())
+  ownerId      String    @unique
+  owner        User      @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  name         String
+  phone        String?
+  email        String?
+  address      String?
+  status       GymStatus @default(pending)
+  statusReason String?
+  settingsJson String    @default("{}")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  admins     GymAdmin[]
+  plans      MembershipPlan[]
+  members    Member[]
+  payments   PaymentMember[]
+  auditLogs  AuditLog[]
+  attendance Attendance[]
+
+  @@index([status])
+}
+
+model GymAdmin {
+  id          String @id @default(uuid())
+  gymId       String
+  gym         Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  title       String?
+  permissions String @default("[]")
+
+  @@unique([gymId, userId])
+}
+
+model MembershipPlan {
+  id           String  @id @default(uuid())
+  gymId        String
+  gym          Gym     @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  name         String
+  price        Decimal
+  currency     String  @default("USD")
+  durationDays Int
+  active       Boolean @default(true)
+
+  members Member[]
+
+  @@index([gymId, active])
+}
+
+model Member {
+  id        String       @id @default(uuid())
+  gymId     String
+  gym       Gym          @relation(fields: [gymId], references: [id], onDelete: Restrict)
+  userId    String       @unique
+  user      User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  planId    String
+  plan      MembershipPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  fullName  String
+  phone     String?
+  email     String
+  photoUrl  String?
+  status    MemberStatus @default(active)
+  joinedAt  DateTime     @default(now())
+  expiresAt DateTime?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  payments   PaymentMember[]
+  attendance Attendance[]
+
+  @@unique([gymId, email])
+  @@index([gymId, status])
+}
+
+model PaymentPlatform {
+  id          String        @id @default(uuid())
+  gymOwnerId  String
+  gymOwner    User          @relation(fields: [gymOwnerId], references: [id], onDelete: Restrict)
+  amount      Decimal
+  currency    String        @default("USD")
+  status      PaymentStatus @default(pending)
+  paidAt      DateTime?
+  invoice     String        @unique
+  providerRef String?       @unique
+  createdAt   DateTime      @default(now())
+
+  @@index([gymOwnerId, createdAt])
+}
+
+model PaymentMember {
+  id          String        @id @default(uuid())
+  memberId    String
+  member      Member        @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  gymId       String
+  gym         Gym           @relation(fields: [gymId], references: [id], onDelete: Restrict)
+  amount      Decimal
+  currency    String        @default("USD")
+  status      PaymentStatus @default(pending)
+  paidAt      DateTime?
+  providerRef String?       @unique
+  createdAt   DateTime      @default(now())
+
+  @@index([gymId, createdAt])
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedBy String
+  updater   User     @relation(fields: [updatedBy], references: [id], onDelete: Restrict)
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actor      User?    @relation("ActorLogs", fields: [actorId], references: [id], onDelete: SetNull)
+  gymId      String?
+  gym        Gym?     @relation(fields: [gymId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String?
+  metadata   String   @default("{}")
+  createdAt  DateTime @default(now())
+
+  @@index([gymId, createdAt])
+}
+
+model Attendance {
+  id          String   @id @default(uuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  gymId       String
+  gym         Gym      @relation(fields: [gymId], references: [id], onDelete: Restrict)
+  checkedInAt DateTime @default(now())
+  source      String   @default("front_desk")
+
+  @@index([gymId, checkedInAt])
+  @@index([memberId, checkedInAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+}
+
+model WebhookEvent {
+  id        String   @id
+  provider  String
+  appliedAt DateTime @default(now())
+  payload   String   @default("{}")
+}
