@@ -17,7 +17,7 @@ You need [Git for Windows](https://git-scm.com/download/win) and [Node.js 20 LTS
 After GymFlow has been pushed to your `gymmanagementsystem` GitHub repo:
 
 ```powershell
-git clone https://github.com/kontehebrima722-gif/gymmanagementsystem.git
+git clone https://github.com/Konteh/gymmanagementsystem.git
 cd gymmanagementsystem
 copy .env.example .env
 npm install
@@ -25,7 +25,7 @@ npm run db:setup
 npm run dev
 ```
 
-If the GitHub owner is not `kontehebrima722-gif`, swap that in the clone URL. Then open [http://127.0.0.1:43127](http://127.0.0.1:43127).
+Then open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 `npm run db:setup` creates the local SQLite database and demo accounts. Run it again if you want a clean seed.
 
@@ -53,7 +53,7 @@ Tenant isolation is enforced in authorization middleware and in every gym-scoped
 
 ## Source control
 
-GitHub repo: **`gymmanagementsystem`** on the GitHub account that owns it (this cloud agent has no GitHub credentials, so a private repo is not visible here). Origin copy: [kontehebrima993/gym-flow](https://cursor.com/codebase/kontehebrima993/gym-flow) (`no-mirror`). The Origin slug `kontehebrima993` is not a GitHub username.
+GitHub repo: [Konteh/gymmanagementsystem](https://github.com/Konteh/gymmanagementsystem). Origin copy: [kontehebrima993/gym-flow](https://cursor.com/codebase/kontehebrima993/gym-flow) (`no-mirror`).
 
 Direct connection: push GymFlow into `gymmanagementsystem`, then **Sync from GitHub** so GitHub stays the source of truth.
 
