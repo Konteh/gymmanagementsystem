@@ -6,7 +6,7 @@
 #   ./scripts/connect-github.sh
 #
 # Optional:
-#   GITHUB_OWNER   default: login on the token (expected: kontehebrima993)
+#   GITHUB_OWNER   default: GitHub login on the token (not the Origin slug)
 #   GITHUB_REPO    default: gym-flow
 #   GITHUB_PRIVATE default: true
 #   CONNECT_GITHUB_DRY_RUN=1  print actions without creating or pushing
@@ -148,14 +148,10 @@ GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 \
 
 echo
 echo "GymFlow is on GitHub: ${CLONE_URL}"
-echo "Origin copy is unchanged: https://origin.cursor.com/kontehebrima993/gym-flow.git"
 echo
-echo "Keep both remotes in sync:"
-echo "  git push origin main"
-echo "  git push github main"
-echo
-echo "To make GitHub the source of truth inside Cursor (optional):"
-echo "  1. Install the Cursor GitHub app on this account"
-echo "  2. Open https://cursor.com/codebase and choose Sync from GitHub"
+echo "Direct Cursor connection (GitHub stays the source of truth):"
+echo "  1. Connect the Cursor GitHub app: https://cursor.com/dashboard/integrations"
+echo "     Grant it this repository (or all repos)."
+echo "  2. Open https://cursor.com/codebase → Sync from GitHub → ${OWNER}/${REPO}"
 echo "     or run: origin repo create-mirrored ${OWNER}/${REPO}"
-echo "  Official mirroring is GitHub → Origin. This Origin-first repo stays native until you do that."
+echo "  After that, git push to the Origin URL lands on GitHub."
