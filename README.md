@@ -45,20 +45,18 @@ Tenant isolation is enforced in authorization middleware and in every gym-scoped
 
 ## Source control
 
-Direct connection means **GitHub is the source of truth** and Origin is a Cursor mirror of that repo. Pushes to the Origin clone URL then land on GitHub, and cloud agents open GitHub pull requests.
+GitHub repo: **`gymmanagementsystem`** on the GitHub account that owns it (this cloud agent has no GitHub credentials, so a private repo is not visible here). Origin copy: [kontehebrima993/gym-flow](https://cursor.com/codebase/kontehebrima993/gym-flow) (`no-mirror`). The Origin slug `kontehebrima993` is not a GitHub username.
 
-GymFlow was created on Origin first (`kontehebrima993/gym-flow`, `mirrorStatus: no-mirror`). Origin cannot attach a native repo to GitHub. The GitHub repo has to exist, then you **Sync from GitHub**. The Origin namespace `kontehebrima993` is not a GitHub username.
+Direct connection: push GymFlow into `gymmanagementsystem`, then **Sync from GitHub** so GitHub stays the source of truth.
 
-### 1. Put the code on GitHub (PAT)
+### 1. Push into gymmanagementsystem (PAT)
 
-Create a PAT, keep it on your machine, and never paste it into Cursor chat.
+Do not paste the token into Cursor chat.
 
 | Token type | Create at | Access needed |
 | --- | --- | --- |
 | Classic | [github.com/settings/tokens](https://github.com/settings/tokens) | `repo` |
-| Fine-grained | [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens) | Account Administration read/write (create the repo). Repository Contents read/write and Metadata read (push). |
-
-From the repo root (WSL is fine):
+| Fine-grained | [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens) | Contents read/write and Metadata read on `gymmanagementsystem` |
 
 ```bash
 read -s GH_TOKEN
@@ -66,26 +64,24 @@ export GH_TOKEN
 ./scripts/connect-github.sh
 ```
 
-The script uses the GitHub login on the token (override with `GITHUB_OWNER` / `GITHUB_REPO` if needed), creates private `github.com/<you>/gym-flow` if missing, adds a `github` remote without embedding the token, and pushes `main`.
+The script authenticates as the token’s GitHub user, requires `gymmanagementsystem` to already exist, adds a `github` remote without embedding the token, and pushes `main` (force-with-lease if GitHub already has an initial README). Override owner with `GITHUB_OWNER` if needed.
 
 ### 2. Connect GitHub inside Cursor
 
 1. Open [cursor.com/dashboard/integrations](https://cursor.com/dashboard/integrations)
-2. Connect **GitHub** and grant the Cursor GitHub app this repository (or all repos)
+2. Connect **GitHub** and grant the Cursor GitHub app `gymmanagementsystem`
 3. You must be a GitHub admin on that repo
 
-### 3. Mirror it (this is the direct link)
+### 3. Mirror it
 
 1. Open [cursor.com/codebase](https://cursor.com/codebase)
-2. **Sync from GitHub** and choose `<you>/gym-flow`
-
-Or from a machine signed into Origin (not this hosted agent token):
+2. **Sync from GitHub** and choose `<you>/gymmanagementsystem`
 
 ```bash
-origin repo create-mirrored <you>/gym-flow
+origin repo create-mirrored <you>/gymmanagementsystem
 ```
 
-Synced repos show GitHub as the source. Clone URL stays `https://origin.cursor.com/<you>/gym-flow.git`; `git push` on that remote goes to GitHub.
+After that, `git push` to the Origin clone URL lands on GitHub.
 
 ### Origin-only clone (until the mirror exists)
 
