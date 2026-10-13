@@ -10,7 +10,42 @@ GymFlow follows the product spec for three mutually exclusive roles:
 
 Classes and scheduling are intentionally out of scope.
 
-## Run locally
+## Get it on your machine
+
+The working copy lives on Origin, not yet on GitHub. Origin CLI runs in **WSL** (Ubuntu), not in PowerShell.
+
+### 1. Prerequisites in WSL
+
+- [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) with Ubuntu
+- Node.js 20 or newer (`node -v`)
+- Git and curl (`sudo apt update && sudo apt install -y git curl`)
+
+If Node is missing or too old:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+source ~/.nvm/nvm.sh
+nvm install 20
+nvm use 20
+```
+
+### 2. Clone from Origin
+
+```bash
+curl -fsSL https://downloads.cursor.com/origin/install.sh | sh
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+origin auth login
+cd ~
+origin repo clone kontehebrima993/gym-flow
+cd gym-flow
+```
+
+Sign in with the Cursor account `kontehebrima993@gmail.com`. If `origin` is not found after install, the `PATH` line above is what fixes it.
+
+Do not clone `gymmanagementsystem` until GymFlow has been pushed there; that GitHub repo does not have this code yet.
+
+### 3. Run the app
 
 ```bash
 cp .env.example .env
@@ -19,7 +54,9 @@ npm run db:setup
 npm run dev
 ```
 
-The app listens on [http://127.0.0.1:43127](http://127.0.0.1:43127).
+Open [http://127.0.0.1:43127](http://127.0.0.1:43127) in your Windows browser. The WSL server is bound to `0.0.0.0:43127`, so `localhost:43127` from Windows works.
+
+`npm run dev` also generates Prisma, applies the SQLite schema, and seeds demo data. To rebuild the database later: `npm run db:setup`.
 
 SQLite is the local database (`prisma/gymflow.db`). Seeded demo password for every account below: `gymflow-demo`.
 
