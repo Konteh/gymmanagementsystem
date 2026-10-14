@@ -18,8 +18,8 @@ export function SettingsForm({
     maintenance_mode?: boolean;
   };
 }) {
-  const [fee, setFee] = useState(String(initial.platform_monthly_fee ?? 49));
-  const [currency, setCurrency] = useState(initial.default_currency ?? "USD");
+  const [fee, setFee] = useState(String(initial.platform_monthly_fee ?? 2500));
+  const [currency, setCurrency] = useState(initial.default_currency ?? "GMD");
   const [email, setEmail] = useState(initial.support_email ?? "");
   const [maintenance, setMaintenance] = useState(Boolean(initial.maintenance_mode));
   const [pending, setPending] = useState(false);
@@ -47,8 +47,8 @@ export function SettingsForm({
   return (
     <div className="max-w-lg space-y-4 rounded-xl border bg-white p-5">
       <div className="space-y-1.5">
-        <Label htmlFor="fee">Monthly platform fee</Label>
-        <Input id="fee" type="number" min={0} value={fee} onChange={(event) => setFee(event.target.value)} />
+        <Label htmlFor="fee">Monthly platform fee (GMD)</Label>
+        <Input id="fee" type="number" min={0} step="1" value={fee} onChange={(event) => setFee(event.target.value)} />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="currency">Default currency</Label>

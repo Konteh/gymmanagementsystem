@@ -68,8 +68,8 @@ export function PlansClient({ gymId, plans }: { gymId: string; plans: Plan[] }) 
           <Input id="name" name="name" required />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="price">Price</Label>
-          <Input id="price" name="price" type="number" min={1} step="0.01" required />
+          <Label htmlFor="price">Price (GMD)</Label>
+          <Input id="price" name="price" type="number" min={1} step="1" required />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="duration_days">Duration (days)</Label>

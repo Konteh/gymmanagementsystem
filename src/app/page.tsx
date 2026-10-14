@@ -16,12 +16,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 const trust = [
-  "IronForge Athletics",
-  "Peak Motion",
-  "Harbor Strength",
-  "Northside Boxing",
-  "Ridge Line Climbing",
-  "Oak & Iron",
+  "Bakau Powerhouse",
+  "Brikama Motion",
+  "Banjul Harbor Gym",
+  "Lamin Boxing Club",
+  "Serekunda Fit",
+  "Kotu Iron",
 ];
 
 const features = [
@@ -102,7 +102,7 @@ export default function LandingPage() {
       <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 lg:grid-cols-2 lg:py-24">
         <div>
           <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">
-            For independent gyms
+            For independent Gambian gyms
           </p>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
             Modern gym management that stays out of the way.
@@ -137,7 +137,7 @@ export default function LandingPage() {
           />
           <div className="absolute inset-x-4 bottom-4 rounded-xl bg-white/95 p-4 shadow-lg">
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              IronForge Athletics
+              Bakau Powerhouse
             </p>
             <div className="mt-2 grid grid-cols-3 gap-3 text-sm">
               <div>
@@ -146,7 +146,7 @@ export default function LandingPage() {
               </div>
               <div>
                 <p className="text-muted-foreground">30-day dues</p>
-                <p className="text-lg font-semibold">$2,140</p>
+                <p className="text-lg font-semibold">D18,500</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Churn</p>

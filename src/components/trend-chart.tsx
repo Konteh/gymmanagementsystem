@@ -29,11 +29,11 @@ export function TrendChart({
             tickLine={false}
           />
           <YAxis
-            tickFormatter={(value) => `$${value}`}
+            tickFormatter={(value) => money(Number(value))}
             tick={{ fill: "#5B6B82", fontSize: 11 }}
             axisLine={false}
             tickLine={false}
-            width={44}
+            width={72}
           />
           <Tooltip
             formatter={(value) => money(Number(value ?? 0))}

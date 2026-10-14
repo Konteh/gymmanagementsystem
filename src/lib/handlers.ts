@@ -18,7 +18,7 @@ import {
   verifyToken,
 } from "@/lib/auth";
 import { ownerAnalytics, platformAnalytics } from "@/lib/analytics";
-import { PLATFORM_FEE_DEFAULT } from "@/lib/constants";
+import { DEFAULT_CURRENCY, DEFAULT_TIMEZONE, PLAN_PRICES, PLATFORM_FEE_DEFAULT } from "@/lib/constants";
 import { ApiError, ok, readJson } from "@/lib/http";
 import { addDays, getPlanForGym, syncExpiredMembers } from "@/lib/membership";
 import {
@@ -115,9 +115,9 @@ export async function handleSignup({ request, requestId }: RouteCtx) {
         address: body.address,
         status: "pending",
         settingsJson: JSON.stringify({
-          currency: "USD",
-          timezone: "America/Los_Angeles",
-          checkin_notes: "Scan at the front desk.",
+          currency: DEFAULT_CURRENCY,
+          timezone: DEFAULT_TIMEZONE,
+          checkin_notes: "Members check in at the front desk.",
         }),
       },
     });
@@ -133,8 +133,8 @@ export async function handleSignup({ request, requestId }: RouteCtx) {
     });
     await tx.membershipPlan.createMany({
       data: [
-        { gymId: gym.id, name: "Monthly Unlimited", price: 89, currency: "USD", durationDays: 30, active: true },
-        { gymId: gym.id, name: "Day Pass", price: 22, currency: "USD", durationDays: 1, active: true },
+        { gymId: gym.id, name: "Monthly Unlimited", price: PLAN_PRICES.monthly, currency: DEFAULT_CURRENCY, durationDays: 30, active: true },
+        { gymId: gym.id, name: "Day Pass", price: PLAN_PRICES.dayPass, currency: DEFAULT_CURRENCY, durationDays: 1, active: true },
       ],
     });
     const invoiceCount = await tx.paymentPlatform.count();
@@ -142,7 +142,7 @@ export async function handleSignup({ request, requestId }: RouteCtx) {
       data: {
         gymOwnerId: created.id,
         amount: PLATFORM_FEE_DEFAULT,
-        currency: "USD",
+        currency: DEFAULT_CURRENCY,
         status: "pending",
         invoice: `INV-2026-${String(invoiceCount + 1).padStart(4, "0")}`,
       },
@@ -605,7 +605,7 @@ export async function handlePlans({ request, params, requestId }: RouteCtx) {
         name: body.name,
         price: body.price,
         durationDays: body.duration_days,
-        currency: body.currency ?? "USD",
+        currency: body.currency ?? DEFAULT_CURRENCY,
         active: true,
       },
     });

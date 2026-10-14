@@ -56,7 +56,7 @@ export default function SignupPage() {
           <form method="post" onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="gym_name">Gym name</Label>
-              <Input id="gym_name" name="gym_name" required maxLength={160} placeholder="Ridge Line Climbing" />
+              <Input id="gym_name" name="gym_name" required maxLength={160} placeholder="Serekunda Fit Club" />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
@@ -65,12 +65,12 @@ export default function SignupPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" name="phone" />
+                <Input id="phone" name="phone" placeholder="+220 3XX XXXX" />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="address">Address</Label>
-              <Textarea id="address" name="address" rows={2} />
+              <Textarea id="address" name="address" rows={2} placeholder="Kairaba Avenue, Serekunda" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password">Password</Label>

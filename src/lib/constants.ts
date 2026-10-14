@@ -12,7 +12,16 @@ export const JWT_SECRET =
 export const WEBHOOK_SECRET =
   process.env.PAYMENT_WEBHOOK_SECRET ?? "gymflow-demo-webhook";
 
-export const PLATFORM_FEE_DEFAULT = 49;
+export const DEFAULT_CURRENCY = "GMD";
+export const DEFAULT_TIMEZONE = "Africa/Banjul";
+export const PLATFORM_FEE_DEFAULT = 2500;
+
+export const PLAN_PRICES = {
+  dayPass: 250,
+  monthly: 1500,
+  quarterly: 4000,
+  annual: 12000,
+} as const;
 
 export const IDS = {
   superAdmin: "11111111-1111-4111-8111-111111111111",

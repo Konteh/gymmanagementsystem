@@ -1,20 +1,29 @@
 import { format, formatDistanceToNow } from "date-fns";
+import { DEFAULT_CURRENCY } from "@/lib/constants";
 
-export function money(amount: number | string, currency = "USD") {
+export function money(amount: number | string, currency = DEFAULT_CURRENCY) {
   const value = typeof amount === "string" ? Number(amount) : amount;
-  return new Intl.NumberFormat("en-US", {
+  const n = Number.isFinite(value) ? value : 0;
+  const digits = new Intl.NumberFormat("en-GM", {
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+  }).format(n);
+  if (currency === "GMD") {
+    return `D${digits}`;
+  }
+  return new Intl.NumberFormat("en-GM", {
     style: "currency",
     currency,
-    maximumFractionDigits: 2,
-  }).format(Number.isFinite(value) ? value : 0);
+    maximumFractionDigits: 0,
+  }).format(n);
 }
 
 export function shortDate(value: string | Date) {
-  return format(new Date(value), "MMM d, yyyy");
+  return format(new Date(value), "d MMM yyyy");
 }
 
 export function dateTime(value: string | Date) {
-  return format(new Date(value), "MMM d, yyyy · h:mm a");
+  return format(new Date(value), "d MMM yyyy · h:mm a");
 }
 
 export function relative(value: string | Date) {

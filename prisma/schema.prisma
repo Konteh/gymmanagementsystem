@@ -102,7 +102,7 @@ model MembershipPlan {
   gym          Gym     @relation(fields: [gymId], references: [id], onDelete: Cascade)
   name         String
   price        Decimal
-  currency     String  @default("USD")
+  currency     String  @default("GMD")
   durationDays Int
   active       Boolean @default(true)
 
@@ -141,7 +141,7 @@ model PaymentPlatform {
   gymOwnerId  String
   gymOwner    User          @relation(fields: [gymOwnerId], references: [id], onDelete: Restrict)
   amount      Decimal
-  currency    String        @default("USD")
+  currency    String        @default("GMD")
   status      PaymentStatus @default(pending)
   paidAt      DateTime?
   invoice     String        @unique
@@ -158,7 +158,7 @@ model PaymentMember {
   gymId       String
   gym         Gym           @relation(fields: [gymId], references: [id], onDelete: Restrict)
   amount      Decimal
-  currency    String        @default("USD")
+  currency    String        @default("GMD")
   status      PaymentStatus @default(pending)
   paidAt      DateTime?
   providerRef String?       @unique

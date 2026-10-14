@@ -27,17 +27,17 @@ npm run dev
 
 Then open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
-`npm run db:setup` creates the local SQLite database and demo accounts. Run it again if you want a clean seed.
+`npm run db:setup` writes a **local SQLite** file (`prisma/gymflow.db`) on your machine and seeds Gambian demo gyms. Amounts are in **GMD**, shown as **D** (for example D1,500). After pulling this change, run `npm run db:setup` once so the old USD seed is replaced.
 
-SQLite is the local database (`prisma/gymflow.db`). Seeded demo password for every account below: `gymflow-demo`.
+Seeded demo password for every account below: `gymflow-demo`.
 
 | Role | Email |
 | --- | --- |
 | Super Admin | `iris.p@example.org` |
-| Gym owner (IronForge Athletics, active) | `maria.s@example.com` |
+| Gym owner (Bakau Powerhouse, active) | `maria.s@example.com` |
 | Front desk staff | `tom.h@example.org` |
-| Pending owner (Peak Motion Studio) | `uma.s@example.org` |
-| Member | `victor.l@example.com` |
+| Pending owner (Brikama Motion Studio) | `uma.s@example.org` |
+| Member (Lamin Jallow) | `victor.l@example.com` |
 
 Owner signup is public. Member identities are created from the owner desk, not from a self-serve signup page.
 
