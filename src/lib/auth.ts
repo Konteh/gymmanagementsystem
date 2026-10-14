@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
+import { cache } from "react";
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
@@ -205,7 +206,7 @@ export async function authFromRequest(request: NextRequest): Promise<AuthContext
   }
 }
 
-export async function getSession(): Promise<AuthContext | null> {
+export const getSession = cache(async function getSession(): Promise<AuthContext | null> {
   const jar = await cookies();
   const token = jar.get(COOKIE_ACCESS)?.value;
   if (!token) return null;
@@ -216,7 +217,7 @@ export async function getSession(): Promise<AuthContext | null> {
   } catch {
     return null;
   }
-}
+});
 
 export async function requireAuth(
   request: NextRequest,
