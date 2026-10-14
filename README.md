@@ -27,10 +27,22 @@ npm run dev
 
 Then open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
-If the app is already running when you pull, stop it with Ctrl+C first. An old process will keep blocking new gyms from registering members. After every pull:
+`npm run dev` only starts the web server. Run `npm run db:setup` when you first clone, and again after a pull that changes Prisma or seed data. Do not leave an old `npm run dev` running in another window — Windows will then report `EADDRINUSE` or lock `prisma/gymflow.db`.
+
+If the page is a blank 500 or the terminal says `Cannot find module '@tailwindcss/postcss'`, the install did not finish. Stop the server with Ctrl+C, then:
+
+```powershell
+Remove-Item -Recurse -Force node_modules, .next -ErrorAction SilentlyContinue
+npm install
+npm run db:setup
+npm run dev
+```
+
+If the app is already running when you pull, stop it with Ctrl+C first. After every pull:
 
 ```powershell
 git pull origin main
+npm install
 npm run db:setup
 npm run dev
 ```
