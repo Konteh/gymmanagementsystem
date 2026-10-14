@@ -101,6 +101,9 @@ export function AppShell({
     session.role === "gym_owner" && session.gymStatus !== "active"
       ? [
           { href: "/owner/pending", label: "Onboarding", icon: LayoutDashboard },
+          { href: "/owner/members", label: "Members", icon: Users },
+          { href: "/owner/plans", label: "Plans", icon: ClipboardList },
+          { href: "/owner/staff", label: "Staff", icon: Dumbbell },
           { href: "/owner/settings", label: "Gym profile", icon: Settings },
         ]
       : NAV[session.role];

@@ -75,7 +75,7 @@ const memberSchema = z.object({
   full_name: z.string().min(2).max(160),
   email: z.string().email(),
   phone: z.string().max(40).optional(),
-  plan_id: z.string().uuid(),
+  plan_id: z.string().min(1).optional(),
   photo_url: z.string().max(400000).optional(),
   password: z.string().min(8).max(72).optional(),
 });
@@ -408,7 +408,7 @@ export async function handleOwnerDashboard({ request, params, requestId }: Route
 export async function handleListMembers({ request, params, requestId }: RouteCtx) {
   const ctx = await requireAuth(
     request,
-    { roles: ["gym_owner"], tenantScoped: true, gymMustBeActive: true },
+    { roles: ["gym_owner"], tenantScoped: true },
     params.gymId,
   );
   await syncExpiredMembers(ctx.gymId!);
@@ -438,12 +438,12 @@ export async function handleListMembers({ request, params, requestId }: RouteCtx
 export async function handleRegisterMember({ request, params, requestId }: RouteCtx) {
   const ctx = await requireAuth(
     request,
-    { roles: ["gym_owner"], tenantScoped: true, gymMustBeActive: true },
+    { roles: ["gym_owner"], tenantScoped: true },
     params.gymId,
   );
   const body = parse(memberSchema, await readJson(request));
   const email = normalizeEmail(body.email);
-  const plan = await getPlanForGym(body.plan_id, ctx.gymId!);
+  const plan = await getPlanForGym(body.plan_id ?? "", ctx.gymId!);
 
   const existingUser = await prisma.user.findUnique({
     where: { email },
@@ -457,13 +457,14 @@ export async function handleRegisterMember({ request, params, requestId }: Route
   }
 
   const temporaryPassword = body.password ?? `Member-${Math.random().toString(36).slice(2, 10)}!`;
+  const passwordHash = existingUser ? existingUser.passwordHash : await hashPassword(temporaryPassword);
   const member = await prisma.$transaction(async (tx) => {
     const user =
       existingUser ??
       (await tx.user.create({
         data: {
           email,
-          passwordHash: await hashPassword(temporaryPassword),
+          passwordHash,
           role: "member",
           status: "active",
           mustChangePassword: true,
@@ -507,7 +508,7 @@ export async function handleRegisterMember({ request, params, requestId }: Route
 export async function handlePatchMember({ request, params, requestId }: RouteCtx) {
   const ctx = await requireAuth(
     request,
-    { roles: ["gym_owner"], tenantScoped: true, gymMustBeActive: true },
+    { roles: ["gym_owner"], tenantScoped: true },
     params.gymId,
   );
   const member = await prisma.member.findFirst({
@@ -623,7 +624,7 @@ export async function handleGymSettings({ request, params, requestId }: RouteCtx
 export async function handlePlans({ request, params, requestId }: RouteCtx) {
   const ctx = await requireAuth(
     request,
-    { roles: ["gym_owner"], tenantScoped: true, gymMustBeActive: true },
+    { roles: ["gym_owner"], tenantScoped: true },
     params.gymId,
   );
   if (request.method === "POST") {
@@ -658,7 +659,7 @@ export async function handlePlans({ request, params, requestId }: RouteCtx) {
 export async function handleStaff({ request, params, requestId }: RouteCtx) {
   const ctx = await requireAuth(
     request,
-    { roles: ["gym_owner"], tenantScoped: true, gymMustBeActive: true },
+    { roles: ["gym_owner"], tenantScoped: true },
     params.gymId,
   );
   if (ctx.isStaff) throw new ApiError(403, "forbidden", "Only the gym owner can manage staff.");
@@ -722,7 +723,7 @@ export async function handleStaff({ request, params, requestId }: RouteCtx) {
 export async function handleCheckIn({ request, params, requestId }: RouteCtx) {
   const ctx = await requireAuth(
     request,
-    { roles: ["gym_owner"], tenantScoped: true, gymMustBeActive: true },
+    { roles: ["gym_owner"], tenantScoped: true },
     params.gymId,
   );
   const body = await readJson<{ member_id: string }>(request);

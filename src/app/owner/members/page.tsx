@@ -2,10 +2,14 @@ import { PageHeader } from "@/components/page-header";
 import { prisma } from "@/lib/db";
 import { requirePageSession } from "@/lib/guard";
 import { serializeMember, serializePlan } from "@/lib/serializers";
+import { ensureDefaultPlans } from "@/lib/membership";
 import { MembersClient } from "./members-client";
 
 export default async function MembersPage() {
   const session = await requirePageSession("gym_owner");
+  if (session.gymId) {
+    await ensureDefaultPlans(session.gymId);
+  }
   const [members, plans] = await Promise.all([
     prisma.member.findMany({
       where: { gymId: session.gymId! },

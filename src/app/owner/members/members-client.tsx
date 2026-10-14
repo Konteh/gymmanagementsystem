@@ -76,7 +76,20 @@ export function MembersClient({
 
   async function register(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    event.stopPropagation();
+    if (!gymId) {
+      toast.error("This gym is not ready yet. Refresh and try again.");
+      return;
+    }
+    const form = event.currentTarget;
+    const fullName = (form.elements.namedItem("full_name") as HTMLInputElement | null)?.value?.trim();
+    const email = (form.elements.namedItem("email") as HTMLInputElement | null)?.value?.trim();
+    const phone = (form.elements.namedItem("phone") as HTMLInputElement | null)?.value?.trim();
+    const planId = (form.elements.namedItem("plan_id") as HTMLSelectElement | null)?.value;
+    if (!fullName || !email) {
+      toast.error("Name and email are required.");
+      return;
+    }
     setPending(true);
     try {
       const result = await api<{ member: Member; temporary_password: string | null }>(
@@ -84,10 +97,10 @@ export function MembersClient({
         {
           method: "POST",
           body: JSON.stringify({
-            full_name: form.get("full_name"),
-            email: form.get("email"),
-            phone: form.get("phone") || undefined,
-            plan_id: form.get("plan_id"),
+            full_name: fullName,
+            email,
+            phone: phone || undefined,
+            plan_id: planId || undefined,
           }),
         },
       );
@@ -243,32 +256,54 @@ export function MembersClient({
             <form onSubmit={register} className="space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="full_name">Full name</Label>
-                <Input id="full_name" name="full_name" required />
+                <input
+                  id="full_name"
+                  name="full_name"
+                  required
+                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                />
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" required />
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" name="phone" />
+                  <input
+                    id="phone"
+                    name="phone"
+                    placeholder="+220 …"
+                    className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                  />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="plan_id">Plan</Label>
-                <select
-                  id="plan_id"
-                  name="plan_id"
-                  required
-                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                >
-                  {plans.filter((plan) => plan.active).map((plan) => (
-                    <option key={plan.id} value={plan.id}>
-                      {plan.name} · {money(plan.price, plan.currency)}
-                    </option>
-                  ))}
-                </select>
+                {plans.filter((plan) => plan.active).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No plans yet. Add one under Plans, then register the member.
+                  </p>
+                ) : (
+                  <select
+                    id="plan_id"
+                    name="plan_id"
+                    required
+                    className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                  >
+                    {plans.filter((plan) => plan.active).map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name} · {money(plan.price, plan.currency)}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               <DialogFooter>
                 <button

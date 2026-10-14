@@ -7,7 +7,13 @@ export default async function OwnerLayout({ children }: { children: ReactNode })
   const session = await requirePageSession("gym_owner");
   const path = await currentPath();
   const active = session.gymStatus === "active";
-  if (!active && !path.startsWith("/owner/pending") && path !== "/owner/settings") {
+  const allowedWhilePending =
+    path.startsWith("/owner/pending") ||
+    path === "/owner/settings" ||
+    path.startsWith("/owner/members") ||
+    path.startsWith("/owner/plans") ||
+    path.startsWith("/owner/staff");
+  if (!active && !allowedWhilePending) {
     redirect("/owner/pending");
   }
   if (active && path.startsWith("/owner/pending")) {
