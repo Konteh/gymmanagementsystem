@@ -30,6 +30,12 @@ export async function createMemberIntent(input: {
   currency: string;
   actorId: string;
 }) {
+  const open = await prisma.paymentMember.findFirst({
+    where: { memberId: input.memberId, gymId: input.gymId, status: "pending" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (open) return open;
+
   const payment = await prisma.paymentMember.create({
     data: {
       memberId: input.memberId,
@@ -48,6 +54,40 @@ export async function createMemberIntent(input: {
     metadata: { amount: input.amount },
   });
   return payment;
+}
+
+export async function acceptMemberPayment(input: {
+  paymentId: string;
+  gymId: string;
+  actorId: string;
+}) {
+  const payment = await prisma.paymentMember.findFirst({
+    where: { id: input.paymentId, gymId: input.gymId },
+    include: { member: true },
+  });
+  if (!payment) throw new ApiError(404, "not_found", "Payment not found.");
+  if (payment.status !== "pending" && payment.status !== "failed") {
+    throw new ApiError(400, "invalid_state", "Only pending or failed demo payments can be accepted.");
+  }
+  const updated = await prisma.paymentMember.update({
+    where: { id: payment.id },
+    data: {
+      status: "paid",
+      paidAt: new Date(),
+      providerRef: payment.providerRef ?? `desk_${payment.id.slice(0, 8)}`,
+    },
+    include: { member: true },
+  });
+  await extendMembership(payment.memberId);
+  await writeAudit({
+    actorId: input.actorId,
+    gymId: input.gymId,
+    action: "payment_accepted",
+    entityType: "payments_member",
+    entityId: payment.id,
+    metadata: { source: "desk_demo" },
+  });
+  return updated;
 }
 
 export async function applyProviderEvent(input: {

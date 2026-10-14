@@ -63,7 +63,7 @@ Owner signup is public. The desk registers members and shares a one-time passwor
 
 ## Payments
 
-There is no live card processor in this build. Checkout at `/pay/[id]` is a demo provider: **Pay now** or **Simulate failure** posts a signed webhook into the same state machine production would use. Retries are idempotent.
+There is no live card processor in this build. A member **Pay dues** creates a pending demo payment. The gym owner accepts it from **Dues**, which marks it paid and extends membership. Checkout at `/pay/[id]` still lets the member send that payment to the gym (or simulate failure). Platform invoices use **Pay now**, which posts a signed webhook. Retries are idempotent.
 
 ## Stack
 

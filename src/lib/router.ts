@@ -29,6 +29,7 @@ const routes: Route[] = [
   { method: "POST", pattern: "/gyms/:gymId/members", handler: h.handleRegisterMember },
   { method: "PATCH", pattern: "/gyms/:gymId/members/:memberId", handler: h.handlePatchMember },
   { method: "GET", pattern: "/gyms/:gymId/payments", handler: h.handleGymPayments },
+  { method: "POST", pattern: "/gyms/:gymId/payments/:paymentId/accept", handler: h.handleAcceptMemberPayment },
   { method: "POST", pattern: "/gyms/:gymId/payments/:paymentId/refund", handler: h.handleRefundMemberPayment },
   { method: "GET", pattern: "/gyms/:gymId/settings", handler: h.handleGymSettings },
   { method: "PATCH", pattern: "/gyms/:gymId/settings", handler: h.handleGymSettings },

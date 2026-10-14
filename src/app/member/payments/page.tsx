@@ -32,7 +32,7 @@ export default async function MemberPaymentsPage() {
         title="Payments"
         description={
           member
-            ? `Current plan ${member.plan.name} is ${money(Number(member.plan.price))} (GMD). Only your own payments appear here.`
+            ? `Current plan ${member.plan.name} is ${money(Number(member.plan.price))} (GMD). Demo payments stay pending until your gym accepts them.`
             : "Only your own dues appear here."
         }
         actions={<PayDuesButton />}
@@ -40,7 +40,7 @@ export default async function MemberPaymentsPage() {
       {payments.length === 0 ? (
         <EmptyState
           title="No payments yet"
-          description="When you pay or renew, the amount in dalasi and the status will show here."
+          description="Pay dues to send a demo payment to your gym. It stays pending until the desk accepts it."
         />
       ) : (
         <div className="overflow-x-auto rounded-xl border bg-white">
@@ -58,6 +58,9 @@ export default async function MemberPaymentsPage() {
                   <TableCell className="font-medium">{money(Number(payment.amount))}</TableCell>
                   <TableCell>
                     <StatusBadge status={payment.status} />
+                    {payment.status === "pending" ? (
+                      <p className="mt-1 text-xs text-muted-foreground">Waiting for your gym to accept</p>
+                    ) : null}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {shortDate(payment.paidAt ?? payment.createdAt)}

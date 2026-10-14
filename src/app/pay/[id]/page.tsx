@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Logo } from "@/components/logo";
@@ -23,7 +23,6 @@ type Payload = {
 export default function PayPage() {
   const params = useParams<{ id: string }>();
   const search = useSearchParams();
-  const router = useRouter();
   const kind = (search.get("kind") as "member" | "platform") ?? "member";
   const [data, setData] = useState<Payload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,17 +37,20 @@ export default function PayPage() {
   async function complete(outcome: "succeeded" | "failed") {
     setPending(true);
     try {
+      if (kind === "member" && outcome === "succeeded") {
+        toast.success("Sent to your gym. The desk will accept this demo payment.");
+        window.location.assign("/member/payments");
+        return;
+      }
       await api(`/payments/${params.id}/demo-complete`, {
         method: "POST",
         body: JSON.stringify({ kind, outcome }),
       });
       toast.success(outcome === "succeeded" ? "Payment captured" : "Payment marked failed");
-      router.push(kind === "platform" ? "/owner/settings" : "/member/payments");
-      router.refresh();
+      window.location.assign(kind === "platform" ? "/owner/settings" : "/member/payments");
     } catch (err) {
-      toast.error(err instanceof ClientApiError ? err.message : "Checkout failed");
-    } finally {
       setPending(false);
+      toast.error(err instanceof ClientApiError ? err.message : "Checkout failed");
     }
   }
 
@@ -58,7 +60,9 @@ export default function PayPage() {
         <Logo />
         <h1 className="mt-6 text-xl font-semibold text-ink">Secure checkout</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Demo provider. In production this screen is hosted by the payment processor; the webhook is still the source of truth.
+          {kind === "member"
+            ? "Demo dues. Send this to your gym — the owner accepts it from Dues. There is no live card charge."
+            : "Demo provider. In production this screen is hosted by the payment processor; the webhook is still the source of truth."}
         </p>
         {error ? <p className="mt-6 text-sm text-destructive">{error}</p> : null}
         {!data && !error ? <p className="mt-6 text-sm text-muted-foreground">Loading payment…</p> : null}
@@ -76,7 +80,7 @@ export default function PayPage() {
             {data.payment.status === "pending" ? (
               <div className="flex gap-2">
                 <Button className="flex-1" disabled={pending} onClick={() => complete("succeeded")}>
-                  Pay now
+                  {kind === "member" ? "Send to gym" : "Pay now"}
                 </Button>
                 <Button variant="outline" className="flex-1" disabled={pending} onClick={() => complete("failed")}>
                   Simulate failure

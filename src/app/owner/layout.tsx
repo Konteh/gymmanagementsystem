@@ -11,6 +11,7 @@ export default async function OwnerLayout({ children }: { children: ReactNode })
     path.startsWith("/owner/pending") ||
     path === "/owner/settings" ||
     path.startsWith("/owner/members") ||
+    path.startsWith("/owner/payments") ||
     path.startsWith("/owner/plans") ||
     path.startsWith("/owner/staff");
   if (!active && !allowedWhilePending) {

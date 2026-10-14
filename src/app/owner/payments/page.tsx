@@ -17,7 +17,7 @@ export default async function OwnerPaymentsPage() {
       <PageHeader
         eyebrow={session.gymName ?? "Gym"}
         title="Member dues"
-        description="Payments members made to this gym. Platform subscription invoices live under gym settings."
+        description="Members submit demo payments. Accept them here to mark dues paid and extend membership. Platform invoices live under gym settings."
       />
       <PaymentsClient gymId={session.gymId!} payments={payments.map(serializeMemberPayment)} />
     </div>

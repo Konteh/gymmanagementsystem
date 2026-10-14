@@ -22,6 +22,7 @@ import { DEFAULT_CURRENCY, DEFAULT_TIMEZONE, PLAN_PRICES, PLATFORM_FEE_DEFAULT }
 import { ApiError, ok, readJson } from "@/lib/http";
 import { addDays, getPlanForGym, syncExpiredMembers } from "@/lib/membership";
 import {
+  acceptMemberPayment,
   applyProviderEvent,
   createMemberIntent,
   demoEventId,
@@ -558,7 +559,7 @@ export async function handlePatchMember({ request, params, requestId }: RouteCtx
 export async function handleGymPayments({ request, params, requestId }: RouteCtx) {
   const ctx = await requireAuth(
     request,
-    { roles: ["gym_owner"], tenantScoped: true, gymMustBeActive: true },
+    { roles: ["gym_owner"], tenantScoped: true },
     params.gymId,
   );
   const payments = await prisma.paymentMember.findMany({
@@ -569,10 +570,24 @@ export async function handleGymPayments({ request, params, requestId }: RouteCtx
   return ok(requestId, payments.map(serializeMemberPayment));
 }
 
+export async function handleAcceptMemberPayment({ request, params, requestId }: RouteCtx) {
+  const ctx = await requireAuth(
+    request,
+    { roles: ["gym_owner"], tenantScoped: true },
+    params.gymId,
+  );
+  const updated = await acceptMemberPayment({
+    paymentId: params.paymentId,
+    gymId: ctx.gymId!,
+    actorId: ctx.userId,
+  });
+  return ok(requestId, serializeMemberPayment(updated));
+}
+
 export async function handleRefundMemberPayment({ request, params, requestId }: RouteCtx) {
   const ctx = await requireAuth(
     request,
-    { roles: ["gym_owner"], tenantScoped: true, gymMustBeActive: true },
+    { roles: ["gym_owner"], tenantScoped: true },
     params.gymId,
   );
   const payment = await prisma.paymentMember.findFirst({

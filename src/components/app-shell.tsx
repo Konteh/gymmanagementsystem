@@ -102,6 +102,7 @@ export function AppShell({
       ? [
           { href: "/owner/pending", label: "Onboarding", icon: LayoutDashboard },
           { href: "/owner/members", label: "Members", icon: Users },
+          { href: "/owner/payments", label: "Dues", icon: CreditCard },
           { href: "/owner/plans", label: "Plans", icon: ClipboardList },
           { href: "/owner/staff", label: "Staff", icon: Dumbbell },
           { href: "/owner/settings", label: "Gym profile", icon: Settings },
