@@ -1,4 +1,4 @@
-import { Building2, Users, Wallet } from "lucide-react";
+import { AppIcon } from "@/components/app-icon";
 import { MetricCard } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -27,14 +27,14 @@ export default async function AdminHomePage() {
         description="Commercial activity across gym tenants. Individual member records are out of scope for this role."
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Active gyms" value={String(stats.gyms.active)} icon={<Building2 className="size-4" />} />
+        <MetricCard label="Active gyms" value={String(stats.gyms.active)} icon={<AppIcon name="building" className="size-4" />} />
         <MetricCard label="Pending reviews" value={String(stats.gyms.pending)} hint={`${stats.gyms.suspended} suspended`} />
-        <MetricCard label="Owner accounts" value={String(stats.owners)} icon={<Users className="size-4" />} />
+        <MetricCard label="Owner accounts" value={String(stats.owners)} icon={<AppIcon name="users" className="size-4" />} />
         <MetricCard
           label="Platform revenue"
           value={money(stats.platformRevenue)}
           hint={`${money(stats.memberDuesVolume)} member dues volume (not visible as PII)`}
-          icon={<Wallet className="size-4" />}
+          icon={<AppIcon name="wallet" className="size-4" />}
         />
       </div>
       <div className="grid gap-4 lg:grid-cols-5">
