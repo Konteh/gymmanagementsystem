@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ApiError, fail, requestIdFrom } from "@/lib/http";
+import { ApiError, fail, mapUnknownError, requestIdFrom } from "@/lib/http";
 import * as h from "@/lib/handlers";
 
 type Handler = (ctx: {
@@ -89,7 +89,7 @@ export async function dispatch(request: NextRequest, segments: string[], method:
     if (error instanceof ApiError) {
       return fail(requestId, error.status, error.type, error.message);
     }
-    console.error(error);
-    return fail(requestId, 500, "internal", "Something went wrong.");
+    const mapped = mapUnknownError(error);
+    return fail(requestId, mapped.status, mapped.type, mapped.message);
   }
 }

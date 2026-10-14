@@ -59,7 +59,7 @@ export async function ensureDefaultPlans(gymId: string) {
   });
 }
 
-export async function getPlanForGym(planId: string, gymId: string) {
+export async function getPlanForGym(planId: string | undefined, gymId: string) {
   let plan = planId
     ? await prisma.membershipPlan.findFirst({ where: { id: planId, gymId } })
     : null;

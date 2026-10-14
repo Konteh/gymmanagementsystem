@@ -49,9 +49,9 @@ export default function SignupPage() {
         <div className="mt-8 rounded-2xl border bg-white p-6 shadow-sm">
           <h1 className="text-2xl font-semibold tracking-tight text-ink">Open your gym on GymFlow</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Owner signup creates a pending tenant. Super Admin approves it before
-            member registration and dues collection unlock. Members cannot
-            self-register here.
+            Owner signup creates your gym. You can register members and plans
+            immediately. Super Admin approval is only required before collecting
+            dues. Members cannot sign themselves up.
           </p>
           <form method="post" onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="space-y-1.5">

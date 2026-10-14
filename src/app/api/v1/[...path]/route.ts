@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server";
 import { dispatch } from "@/lib/router";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 type Ctx = { params: Promise<{ path: string[] }> };
 
 async function run(request: NextRequest, ctx: Ctx, method: string) {

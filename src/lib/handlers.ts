@@ -71,13 +71,17 @@ const ownerStatusSchema = z.object({
   reason: z.string().max(400).optional(),
 });
 
+function emptyToUndefined(value: unknown) {
+  return typeof value === "string" && value.trim() === "" ? undefined : value;
+}
+
 const memberSchema = z.object({
-  full_name: z.string().min(2).max(160),
-  email: z.string().email(),
-  phone: z.string().max(40).optional(),
-  plan_id: z.string().min(1).optional(),
-  photo_url: z.string().max(400000).optional(),
-  password: z.string().min(8).max(72).optional(),
+  full_name: z.string().trim().min(2).max(160),
+  email: z.string().trim().email(),
+  phone: z.preprocess(emptyToUndefined, z.string().max(40).optional()),
+  plan_id: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  photo_url: z.preprocess(emptyToUndefined, z.string().max(400000).optional()),
+  password: z.preprocess(emptyToUndefined, z.string().min(8).max(72).optional()),
 });
 
 function parse<T>(schema: z.ZodType<T>, data: unknown): T {
@@ -160,7 +164,7 @@ export async function handleSignup({ request, requestId }: RouteCtx) {
     user: publicUser(user),
     next: "/owner/pending",
   }, 201);
-  return applyAuthCookies(response, tokens.access, tokens.refresh);
+  return applyAuthCookies(response, tokens.access, tokens.refresh, request);
 }
 
 export async function handleLogin({ request, requestId }: RouteCtx) {
@@ -195,7 +199,7 @@ export async function handleLogin({ request, requestId }: RouteCtx) {
     next,
     must_change_password: user.mustChangePassword,
   });
-  return applyAuthCookies(response, tokens.access, tokens.refresh);
+  return applyAuthCookies(response, tokens.access, tokens.refresh, request);
 }
 
 export async function handleSetPassword({ request, requestId }: RouteCtx) {
@@ -221,7 +225,7 @@ export async function handleSetPassword({ request, requestId }: RouteCtx) {
   const home =
     user.role === "super_admin" ? "/admin" : user.role === "member" ? "/member" : "/owner";
   const response = ok(requestId, { next: home, must_change_password: false });
-  return applyAuthCookies(response, tokens.access, tokens.refresh);
+  return applyAuthCookies(response, tokens.access, tokens.refresh, request);
 }
 
 export async function handleRefresh({ request, requestId }: RouteCtx) {
@@ -238,7 +242,7 @@ export async function handleRefresh({ request, requestId }: RouteCtx) {
   const refresh = await rotateRefreshToken(token, user.id);
   const access = await signAccessToken(user.id, user.email, user.role);
   const response = ok(requestId, { ok: true });
-  return applyAuthCookies(response, access, refresh);
+  return applyAuthCookies(response, access, refresh, request);
 }
 
 export async function handleLogout({ request, requestId }: RouteCtx) {
@@ -441,19 +445,32 @@ export async function handleRegisterMember({ request, params, requestId }: Route
     { roles: ["gym_owner"], tenantScoped: true },
     params.gymId,
   );
+  if (!ctx.gymId) {
+    throw new ApiError(400, "gym_missing", "Your gym profile is not ready yet. Sign out, sign in, and try again.");
+  }
   const body = parse(memberSchema, await readJson(request));
   const email = normalizeEmail(body.email);
-  const plan = await getPlanForGym(body.plan_id ?? "", ctx.gymId!);
+  const plan = await getPlanForGym(body.plan_id, ctx.gymId);
 
   const existingUser = await prisma.user.findUnique({
     where: { email },
     include: { memberProfile: true },
   });
   if (existingUser && existingUser.role !== "member") {
-    throw new ApiError(409, "role_conflict", "That identity already has a different role.");
+    throw new ApiError(
+      409,
+      "role_conflict",
+      "That email is already used by a gym owner or staff account. Use a different member email.",
+    );
   }
   if (existingUser?.memberProfile) {
-    throw new ApiError(409, "account_exists", "This member is already registered.");
+    throw new ApiError(
+      409,
+      "account_exists",
+      existingUser.memberProfile.gymId === ctx.gymId
+        ? "This member is already on your roster."
+        : "This email is already registered at another gym.",
+    );
   }
 
   const temporaryPassword = body.password ?? `Member-${Math.random().toString(36).slice(2, 10)}!`;

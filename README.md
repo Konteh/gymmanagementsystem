@@ -27,6 +27,14 @@ npm run dev
 
 Then open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
+If the app is already running when you pull, stop it with Ctrl+C first. An old process will keep blocking new gyms from registering members. After every pull:
+
+```powershell
+git pull origin main
+npm run db:setup
+npm run dev
+```
+
 `npm run db:setup` writes a **local SQLite** file (`prisma/gymflow.db`) on your machine and seeds Gambian demo gyms. Amounts are in **GMD**, shown as **D** (for example D1,500). After pulling this change, run `npm run db:setup` once so the old USD seed is replaced.
 
 Seeded demo password for every account below: `gymflow-demo`.

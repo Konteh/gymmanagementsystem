@@ -124,12 +124,20 @@ export async function buildAuthContext(userId: string): Promise<AuthContext> {
   };
 }
 
+function cookieSecure(request?: NextRequest) {
+  const forwarded = request?.headers.get("x-forwarded-proto");
+  if (forwarded) return forwarded.split(",")[0]?.trim() === "https";
+  if (request?.nextUrl.protocol === "https:") return true;
+  return false;
+}
+
 export function applyAuthCookies(
   response: NextResponse,
   access: string,
   refresh: string,
+  request?: NextRequest,
 ) {
-  const secure = process.env.NODE_ENV === "production";
+  const secure = cookieSecure(request);
   response.cookies.set(COOKIE_ACCESS, access, {
     httpOnly: true,
     sameSite: "lax",

@@ -62,6 +62,11 @@ export function MembersClient({
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const activePlans = plans.filter((plan) => plan.active);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [planId, setPlanId] = useState(activePlans[0]?.id ?? "");
 
   const rows = useMemo(() => {
     return members.filter((member) => {
@@ -74,6 +79,14 @@ export function MembersClient({
     });
   }, [members, query, status]);
 
+  function resetForm() {
+    setFullName("");
+    setEmail("");
+    setPhone("");
+    setPlanId(activePlans[0]?.id ?? "");
+    setTempPassword(null);
+  }
+
   async function register(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     event.stopPropagation();
@@ -81,12 +94,9 @@ export function MembersClient({
       toast.error("This gym is not ready yet. Refresh and try again.");
       return;
     }
-    const form = event.currentTarget;
-    const fullName = (form.elements.namedItem("full_name") as HTMLInputElement | null)?.value?.trim();
-    const email = (form.elements.namedItem("email") as HTMLInputElement | null)?.value?.trim();
-    const phone = (form.elements.namedItem("phone") as HTMLInputElement | null)?.value?.trim();
-    const planId = (form.elements.namedItem("plan_id") as HTMLSelectElement | null)?.value;
-    if (!fullName || !email) {
+    const name = fullName.trim();
+    const mail = email.trim();
+    if (!name || !mail) {
       toast.error("Name and email are required.");
       return;
     }
@@ -97,9 +107,9 @@ export function MembersClient({
         {
           method: "POST",
           body: JSON.stringify({
-            full_name: fullName,
-            email,
-            phone: phone || undefined,
+            full_name: name,
+            email: mail,
+            phone: phone.trim() || undefined,
             plan_id: planId || undefined,
           }),
         },
@@ -109,7 +119,8 @@ export function MembersClient({
       if (!result.temporary_password) setOpen(false);
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof ClientApiError ? error.message : "Could not register member");
+      const message = error instanceof ClientApiError ? error.message : "Could not register member.";
+      toast.error(message);
     } finally {
       setPending(false);
     }
@@ -163,7 +174,7 @@ export function MembersClient({
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => { setTempPassword(null); setOpen(true); }}>Register member</Button>
+        <Button onClick={() => { resetForm(); setOpen(true); }}>Register member</Button>
       </div>
       {rows.length === 0 ? (
         <EmptyState
@@ -237,12 +248,20 @@ export function MembersClient({
         </div>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        disablePointerDismissal={pending}
+        onOpenChange={(next) => {
+          if (pending && !next) return;
+          setOpen(next);
+          if (!next) resetForm();
+        }}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Quick registration</DialogTitle>
             <DialogDescription>
-              Name, contact, plan. Photo is optional. A one-time password is created so they can sign in and choose their own.
+              Name, contact, plan. A one-time password is created so they can sign in and choose their own.
             </DialogDescription>
           </DialogHeader>
           {tempPassword ? (
@@ -259,7 +278,10 @@ export function MembersClient({
                 <input
                   id="full_name"
                   name="full_name"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
                   required
+                  autoComplete="name"
                   className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
                 />
               </div>
@@ -270,7 +292,10 @@ export function MembersClient({
                     id="email"
                     name="email"
                     type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
                     required
+                    autoComplete="email"
                     className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
                   />
                 </div>
@@ -279,25 +304,29 @@ export function MembersClient({
                   <input
                     id="phone"
                     name="phone"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
                     placeholder="+220 …"
+                    autoComplete="tel"
                     className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="plan_id">Plan</Label>
-                {plans.filter((plan) => plan.active).length === 0 ? (
+                {activePlans.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No plans yet. Add one under Plans, then register the member.
+                    No saved plans yet. Registering will assign a default Day Pass or Monthly plan automatically.
                   </p>
                 ) : (
                   <select
                     id="plan_id"
                     name="plan_id"
-                    required
+                    value={planId}
+                    onChange={(event) => setPlanId(event.target.value)}
                     className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
                   >
-                    {plans.filter((plan) => plan.active).map((plan) => (
+                    {activePlans.map((plan) => (
                       <option key={plan.id} value={plan.id}>
                         {plan.name} · {money(plan.price, plan.currency)}
                       </option>
