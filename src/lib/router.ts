@@ -13,6 +13,7 @@ type Route = { method: string; pattern: string; handler: Handler };
 const routes: Route[] = [
   { method: "POST", pattern: "/auth/signup", handler: h.handleSignup },
   { method: "POST", pattern: "/auth/login", handler: h.handleLogin },
+  { method: "POST", pattern: "/auth/password", handler: h.handleSetPassword },
   { method: "POST", pattern: "/auth/refresh", handler: h.handleRefresh },
   { method: "POST", pattern: "/auth/logout", handler: h.handleLogout },
   { method: "GET", pattern: "/auth/session", handler: h.handleSession },

@@ -26,6 +26,7 @@ export type AuthContext = {
   gymName: string | null;
   memberId: string | null;
   isStaff: boolean;
+  mustChangePassword: boolean;
 };
 
 type TokenClaims = JWTPayload & {
@@ -119,6 +120,7 @@ export async function buildAuthContext(userId: string): Promise<AuthContext> {
     gymName,
     memberId: user.memberProfile?.id ?? null,
     isStaff,
+    mustChangePassword: user.mustChangePassword,
   };
 }
 

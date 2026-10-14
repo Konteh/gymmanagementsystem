@@ -39,7 +39,7 @@ Seeded demo password for every account below: `gymflow-demo`.
 | Pending owner (Brikama Motion Studio) | `uma.s@example.org` |
 | Member (Lamin Jallow) | `victor.l@example.com` |
 
-Owner signup is public. Member identities are created from the owner desk, not from a self-serve signup page.
+Owner signup is public. The desk registers members and shares a one-time password. On first sign-in the member must choose their own password.
 
 ## Payments
 

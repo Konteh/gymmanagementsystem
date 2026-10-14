@@ -61,6 +61,11 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+const setPasswordSchema = z.object({
+  current_password: z.string().min(1),
+  password: z.string().min(8).max(72),
+});
+
 const ownerStatusSchema = z.object({
   decision: z.enum(["approve", "reject", "suspend"]),
   reason: z.string().max(400).optional(),
@@ -176,15 +181,46 @@ export async function handleLogin({ request, requestId }: RouteCtx) {
 
   const tokens = await issueSession(user.id, user.email, user.role);
   const ctx = await buildAuthContext(user.id);
-  const next =
-    user.role === "super_admin"
+  const next = user.mustChangePassword
+    ? "/set-password"
+    : user.role === "super_admin"
       ? "/admin"
       : user.role === "member"
         ? "/member"
         : ctx.gymStatus === "active"
           ? "/owner"
           : "/owner/pending";
-  const response = ok(requestId, { user: publicUser(user), next });
+  const response = ok(requestId, {
+    user: publicUser(user),
+    next,
+    must_change_password: user.mustChangePassword,
+  });
+  return applyAuthCookies(response, tokens.access, tokens.refresh);
+}
+
+export async function handleSetPassword({ request, requestId }: RouteCtx) {
+  const ctx = await requireAuth(request, { roles: ["member", "gym_owner", "super_admin"] });
+  const body = parse(setPasswordSchema, await readJson(request));
+  const user = await prisma.user.findUnique({ where: { id: ctx.userId } });
+  if (!user) throw new ApiError(401, "unauthenticated", "Sign in to continue.");
+  const valid = await verifyPassword(body.current_password, user.passwordHash);
+  if (!valid) {
+    throw new ApiError(400, "invalid_credentials", "Current password is incorrect.");
+  }
+  if (body.password === body.current_password) {
+    throw new ApiError(400, "invalid_input", "Choose a new password that is different from the one-time password.");
+  }
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      passwordHash: await hashPassword(body.password),
+      mustChangePassword: false,
+    },
+  });
+  const tokens = await issueSession(user.id, user.email, user.role);
+  const home =
+    user.role === "super_admin" ? "/admin" : user.role === "member" ? "/member" : "/owner";
+  const response = ok(requestId, { next: home, must_change_password: false });
   return applyAuthCookies(response, tokens.access, tokens.refresh);
 }
 
@@ -430,6 +466,7 @@ export async function handleRegisterMember({ request, params, requestId }: Route
           passwordHash: await hashPassword(temporaryPassword),
           role: "member",
           status: "active",
+          mustChangePassword: true,
         },
       }));
     const created = await tx.member.create({

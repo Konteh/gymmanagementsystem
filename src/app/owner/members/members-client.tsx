@@ -229,13 +229,15 @@ export function MembersClient({
           <DialogHeader>
             <DialogTitle>Quick registration</DialogTitle>
             <DialogDescription>
-              Name, contact, plan. Photo is optional. A member login is created automatically.
+              Name, contact, plan. Photo is optional. A one-time password is created so they can sign in and choose their own.
             </DialogDescription>
           </DialogHeader>
           {tempPassword ? (
             <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">
-              Temporary password: <span className="font-mono font-medium">{tempPassword}</span>
-              <p className="mt-1 text-xs">Share it once. It will not be shown again.</p>
+              One-time password: <span className="font-mono font-medium">{tempPassword}</span>
+              <p className="mt-1 text-xs">
+                Share it once. The member must replace it with their own password on first sign-in. It will not be shown here again.
+              </p>
             </div>
           ) : (
             <form onSubmit={register} className="space-y-3">

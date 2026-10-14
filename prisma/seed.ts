@@ -38,12 +38,24 @@ async function resetLocalData() {
   await prisma.user.deleteMany();
 }
 
+async function normalizeToGmd() {
+  await prisma.membershipPlan.updateMany({ data: { currency: DEFAULT_CURRENCY } });
+  await prisma.paymentMember.updateMany({ data: { currency: DEFAULT_CURRENCY } });
+  await prisma.paymentPlatform.updateMany({ data: { currency: DEFAULT_CURRENCY } });
+  await prisma.systemSetting.upsert({
+    where: { key: "default_currency" },
+    create: { key: "default_currency", value: JSON.stringify(DEFAULT_CURRENCY), updatedBy: IDS.superAdmin },
+    update: { value: JSON.stringify(DEFAULT_CURRENCY) },
+  });
+}
+
 async function main() {
   const existing = await prisma.user.findUnique({ where: { id: IDS.superAdmin } });
   const currencySetting = await prisma.systemSetting.findUnique({ where: { key: "default_currency" } });
   const currentCurrency = currencySetting ? (JSON.parse(currencySetting.value) as string) : null;
 
   if (existing && currentCurrency === DEFAULT_CURRENCY) {
+    await normalizeToGmd();
     console.log("Local GMD seed already applied.");
     return;
   }

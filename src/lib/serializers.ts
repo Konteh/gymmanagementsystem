@@ -8,12 +8,13 @@ import type {
   User,
 } from "@prisma/client";
 
-export function publicUser(user: Pick<User, "id" | "email" | "role" | "status" | "createdAt">) {
+export function publicUser(user: Pick<User, "id" | "email" | "role" | "status" | "createdAt" | "mustChangePassword">) {
   return {
     id: user.id,
     email: user.email,
     role: user.role,
     status: user.status,
+    must_change_password: user.mustChangePassword,
     created_at: user.createdAt.toISOString(),
   };
 }

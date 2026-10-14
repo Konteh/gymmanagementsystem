@@ -45,9 +45,9 @@ const NAV: Record<string, Item[]> = {
     { href: "/owner/settings", label: "Gym settings", icon: Settings },
   ],
   member: [
-    { href: "/member", label: "Membership", icon: UserCircle },
-    { href: "/member/payments", label: "Payments", icon: CreditCard },
-    { href: "/member/attendance", label: "Check-ins", icon: ClipboardList },
+    { href: "/member", label: "Home", icon: UserCircle },
+    { href: "/member/payments", label: "My dues", icon: CreditCard },
+    { href: "/member/attendance", label: "My visits", icon: ClipboardList },
   ],
 };
 

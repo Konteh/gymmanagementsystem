@@ -25,6 +25,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const isAuthPage = pathname === "/login" || pathname === "/signup";
+  const isSetPassword = pathname === "/set-password";
   const isAdmin = pathname.startsWith("/admin");
   const isOwner = pathname.startsWith("/owner");
   const isMember = pathname.startsWith("/member");
@@ -34,7 +35,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(ROLE_HOME[role] ?? "/", request.url));
   }
 
-  if ((isAdmin || isOwner || isMember || isPay) && !role) {
+  if ((isAdmin || isOwner || isMember || isPay || isSetPassword) && !role) {
     const login = new URL("/login", request.url);
     login.searchParams.set("next", pathname);
     return NextResponse.redirect(login);
@@ -66,5 +67,6 @@ export const config = {
     "/member",
     "/member/:path*",
     "/pay/:path*",
+    "/set-password",
   ],
 };

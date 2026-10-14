@@ -24,7 +24,7 @@ export function PayDuesButton() {
 
   return (
     <Button onClick={start} disabled={pending}>
-      {pending ? "Starting…" : "Pay current dues"}
+      {pending ? "Starting…" : "Pay dues"}
     </Button>
   );
 }

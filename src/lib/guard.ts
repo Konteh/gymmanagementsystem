@@ -13,6 +13,7 @@ export async function requirePageSession(role: UserRole): Promise<AuthContext> {
   const session = await getSession();
   if (!session) redirect("/login");
   if (session.role !== role) redirect(HOME[session.role]);
+  if (session.mustChangePassword) redirect("/set-password");
   return session;
 }
 

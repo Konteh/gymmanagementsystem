@@ -16,6 +16,10 @@ import { PayDuesButton } from "./pay-button";
 
 export default async function MemberPaymentsPage() {
   const session = await requirePageSession("member");
+  const member = await prisma.member.findUnique({
+    where: { id: session.memberId! },
+    include: { plan: true },
+  });
   const payments = await prisma.paymentMember.findMany({
     where: { memberId: session.memberId! },
     orderBy: { createdAt: "desc" },
@@ -24,19 +28,26 @@ export default async function MemberPaymentsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Membership"
-        title="Your payments"
-        description="Only your dues. Start a payment and the provider webhook marks it paid — not the thank-you page."
+        eyebrow="Your dues"
+        title="Payments"
+        description={
+          member
+            ? `Current plan ${member.plan.name} is ${money(Number(member.plan.price))} (GMD). Only your own payments appear here.`
+            : "Only your own dues appear here."
+        }
         actions={<PayDuesButton />}
       />
       {payments.length === 0 ? (
-        <EmptyState title="No payments yet" description="When you renew, the history will show here." />
+        <EmptyState
+          title="No payments yet"
+          description="When you pay or renew, the amount in dalasi and the status will show here."
+        />
       ) : (
-        <div className="rounded-xl border bg-white">
+        <div className="overflow-x-auto rounded-xl border bg-white">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Amount</TableHead>
+                <TableHead>Amount (GMD)</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
               </TableRow>
@@ -44,7 +55,7 @@ export default async function MemberPaymentsPage() {
             <TableBody>
               {payments.map((payment) => (
                 <TableRow key={payment.id}>
-                  <TableCell className="font-medium">{money(Number(payment.amount), payment.currency)}</TableCell>
+                  <TableCell className="font-medium">{money(Number(payment.amount))}</TableCell>
                   <TableCell>
                     <StatusBadge status={payment.status} />
                   </TableCell>

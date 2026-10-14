@@ -21,7 +21,7 @@ const demos = [
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("gymflow-demo");
+  const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
 
   async function authenticate(nextEmail: string, nextPassword: string) {
@@ -61,7 +61,7 @@ export default function LoginPage() {
           </div>
           <h2 className="mt-4 text-xl font-semibold text-ink lg:mt-0">Log in</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Use a seeded demo account or an owner you created.
+            Members sign in with the one-time password from their gym, then choose their own.
           </p>
           <div className="mt-6 space-y-4">
             <div className="space-y-1.5">
