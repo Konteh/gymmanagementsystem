@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Check, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { StatusBadge } from "@/components/status-badge";
@@ -61,7 +62,12 @@ export function MembersClient({
   const [status, setStatus] = useState("all");
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
-  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [credentials, setCredentials] = useState<{
+    name: string;
+    email: string;
+    password: string;
+  } | null>(null);
   const activePlans = plans.filter((plan) => plan.active);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -84,7 +90,26 @@ export function MembersClient({
     setEmail("");
     setPhone("");
     setPlanId(activePlans[0]?.id ?? "");
-    setTempPassword(null);
+    setCopied(false);
+  }
+
+  function closeDialog() {
+    const shouldRefresh = Boolean(credentials);
+    setOpen(false);
+    setCredentials(null);
+    resetForm();
+    if (shouldRefresh) router.refresh();
+  }
+
+  async function copyPassword() {
+    if (!credentials) return;
+    try {
+      await navigator.clipboard.writeText(credentials.password);
+      setCopied(true);
+      toast.success("Password copied");
+    } catch {
+      toast.error("Could not copy. Select the password and copy it yourself.");
+    }
   }
 
   async function register(event: React.FormEvent<HTMLFormElement>) {
@@ -114,10 +139,19 @@ export function MembersClient({
           }),
         },
       );
-      setTempPassword(result.temporary_password);
       toast.success(`${result.member.full_name} is on the roster`);
-      if (!result.temporary_password) setOpen(false);
-      router.refresh();
+      if (result.temporary_password) {
+        setCredentials({
+          name: result.member.full_name,
+          email: result.member.email,
+          password: result.temporary_password,
+        });
+        setCopied(false);
+      } else {
+        setOpen(false);
+        resetForm();
+        router.refresh();
+      }
     } catch (error) {
       const message = error instanceof ClientApiError ? error.message : "Could not register member.";
       toast.error(message);
@@ -174,13 +208,31 @@ export function MembersClient({
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => { resetForm(); setOpen(true); }}>Register member</Button>
+        <Button
+          onClick={() => {
+            resetForm();
+            setCredentials(null);
+            setOpen(true);
+          }}
+        >
+          Register member
+        </Button>
       </div>
       {rows.length === 0 ? (
         <EmptyState
           title="No members match"
           description="Register someone from the desk. Self-serve member signup is intentionally not offered."
-          action={<Button onClick={() => setOpen(true)}>Quick register</Button>}
+          action={
+            <Button
+              onClick={() => {
+                resetForm();
+                setCredentials(null);
+                setOpen(true);
+              }}
+            >
+              Quick register
+            </Button>
+          }
         />
       ) : (
         <div className="rounded-xl border bg-white">
@@ -250,26 +302,53 @@ export function MembersClient({
 
       <Dialog
         open={open}
-        disablePointerDismissal={pending}
-        onOpenChange={(next) => {
-          if (pending && !next) return;
-          setOpen(next);
-          if (!next) resetForm();
+        disablePointerDismissal={pending || Boolean(credentials)}
+        onOpenChange={(next, eventDetails) => {
+          if (!next && (pending || credentials)) {
+            eventDetails.cancel();
+            return;
+          }
+          if (!next) closeDialog();
+          else setOpen(true);
         }}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg" showCloseButton={!credentials}>
           <DialogHeader>
-            <DialogTitle>Quick registration</DialogTitle>
+            <DialogTitle>{credentials ? "Share the one-time password" : "Quick registration"}</DialogTitle>
             <DialogDescription>
-              Name, contact, plan. A one-time password is created so they can sign in and choose their own.
+              {credentials
+                ? "This password is shown once. Copy it now, then give it to the member so they can sign in and choose their own."
+                : "Name, contact, plan. A one-time password is created so they can sign in and choose their own."}
             </DialogDescription>
           </DialogHeader>
-          {tempPassword ? (
-            <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">
-              One-time password: <span className="font-mono font-medium">{tempPassword}</span>
-              <p className="mt-1 text-xs">
-                Share it once. The member must replace it with their own password on first sign-in. It will not be shown here again.
-              </p>
+          {credentials ? (
+            <div className="space-y-3">
+              <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-950">
+                <p className="font-medium">{credentials.name}</p>
+                <p className="mt-1 text-xs">{credentials.email}</p>
+                <label className="mt-3 block text-xs font-medium" htmlFor="one-time-password">
+                  One-time password
+                </label>
+                <input
+                  id="one-time-password"
+                  readOnly
+                  value={credentials.password}
+                  className="mt-1 h-9 w-full rounded-lg border border-emerald-200 bg-white px-2.5 font-mono text-sm"
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+                <p className="mt-2 text-xs">
+                  It will not be shown here again. The member must replace it on first sign-in.
+                </p>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => void copyPassword()}>
+                  {copied ? <Check /> : <Copy />}
+                  {copied ? "Copied" : "Copy password"}
+                </Button>
+                <Button type="button" onClick={closeDialog}>
+                  I&apos;ve copied it
+                </Button>
+              </DialogFooter>
             </div>
           ) : (
             <form onSubmit={register} className="space-y-3">

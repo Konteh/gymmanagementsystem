@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Logo } from "@/components/logo";
@@ -19,7 +18,6 @@ const demos = [
 ];
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
@@ -27,18 +25,21 @@ export default function LoginPage() {
   async function authenticate(nextEmail: string, nextPassword: string) {
     setPending(true);
     try {
-      const result = await api<{ next: string }>("/auth/login", {
+      const result = await api<{ next: string; must_change_password?: boolean }>("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email: nextEmail.trim(), password: nextPassword }),
       });
       toast.success("Signed in");
-      const nextPath = new URLSearchParams(window.location.search).get("next");
-      router.push(nextPath || result.next);
-      router.refresh();
+      const requested = new URLSearchParams(window.location.search).get("next");
+      const safeNext =
+        requested && requested.startsWith("/") && !requested.startsWith("//") ? requested : null;
+      const destination = result.must_change_password
+        ? "/set-password"
+        : safeNext || result.next || "/";
+      window.location.assign(destination);
     } catch (error) {
-      toast.error(error instanceof ClientApiError ? error.message : "Could not sign in");
-    } finally {
       setPending(false);
+      toast.error(error instanceof ClientApiError ? error.message : "Could not sign in");
     }
   }
 

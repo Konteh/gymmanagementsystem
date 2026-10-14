@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Logo } from "@/components/logo";
@@ -11,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { api, ClientApiError } from "@/lib/api-client";
 
 export default function SetPasswordPage() {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -32,13 +30,11 @@ export default function SetPasswordPage() {
           password,
         }),
       });
-      toast.success("Your password is set. Welcome in.");
-      router.push(result.next || "/member");
-      router.refresh();
+      toast.success("Your password is set. Opening your membership…");
+      window.location.assign(result.next || "/member");
     } catch (error) {
-      toast.error(error instanceof ClientApiError ? error.message : "Could not save your password");
-    } finally {
       setPending(false);
+      toast.error(error instanceof ClientApiError ? error.message : "Could not save your password");
     }
   }
 
