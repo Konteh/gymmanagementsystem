@@ -78,11 +78,11 @@ export default function LandingPage() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <Logo />
           <nav className="hidden items-center gap-6 text-sm font-medium text-navy/80 md:flex">
+            <Link href="/demo" className="hover:text-ink">
+              Demo flow
+            </Link>
             <a href="#features" className="hover:text-ink">
               Product
-            </a>
-            <a href="#stats" className="hover:text-ink">
-              Traction
             </a>
             <a href="#roles" className="hover:text-ink">
               Roles
@@ -115,14 +115,14 @@ export default function LandingPage() {
             member files.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href="/signup" className={cn(buttonVariants({ size: "lg" }), "h-11 px-5")}>
-              Create your gym
+            <Link href="/demo" className={cn(buttonVariants({ size: "lg" }), "h-11 px-5")}>
+              Present the prototype
             </Link>
             <Link
               href="/login"
               className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-11 px-5")}
             >
-              Use the demo
+              Log in
             </Link>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
@@ -244,13 +244,13 @@ export default function LandingPage() {
         </div>
         <div className="mt-10 flex flex-col items-start justify-between gap-4 rounded-2xl bg-[#F3F6FA] p-6 sm:flex-row sm:items-center">
           <div>
-            <p className="text-lg font-semibold">Ready to put the desk on rails?</p>
+            <p className="text-lg font-semibold">Walk a room through the product</p>
             <p className="text-sm text-muted-foreground">
-              Create an owner account. Super Admin reviews it. Then you start registering members.
+              Six live steps: owner signup, Super Admin approval, members, door QR, check-in, renewal.
             </p>
           </div>
-          <Link href="/signup" className={cn(buttonVariants({ size: "lg" }), "h-11 px-5")}>
-            Start your gym
+          <Link href="/demo" className={cn(buttonVariants({ size: "lg" }), "h-11 px-5")}>
+            Open the demo flow
           </Link>
         </div>
       </section>
@@ -264,6 +264,7 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="flex gap-5 text-sm text-muted-foreground">
+            <Link href="/demo">Demo flow</Link>
             <Link href="/login">Log in</Link>
             <Link href="/signup">Owner signup</Link>
             <span>© {new Date().getFullYear()} GymFlow</span>

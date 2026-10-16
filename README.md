@@ -67,6 +67,8 @@ Seeded demo password for every account below: `gymflow-demo`.
 
 Demo member (no login): **Lamin Jallow**, phone `301 1191`. Door page: [http://127.0.0.1:43127/g/demo-bakau-powerhouse](http://127.0.0.1:43127/g/demo-bakau-powerhouse).
 
+Present the prototype from [http://127.0.0.1:43127/demo](http://127.0.0.1:43127/demo). Six live steps: owner signup → Super Admin approval → add members → print door QR → member check-in → pay / activate. Click a step, then open the real screen. Arrow keys move the story. Login demo buttons sign you in on one click.
+
 Owner signup is public. The desk adds members by name, phone, and plan. Print **Door QR** and put it at the entrance.
 
 ## Payments
