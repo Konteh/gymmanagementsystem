@@ -1,6 +1,7 @@
 import {
   PrismaClient,
   type GymStatus,
+  type Member,
   type MemberStatus,
   type PaymentStatus,
 } from "@prisma/client";
@@ -177,7 +178,7 @@ async function main() {
     { name: "Ousman Ceesay", phone: "+220 441 7755", planId: monthly.id, status: "inactive", joined: 160, expiresIn: 2 },
   ];
 
-  const members = [];
+  const members: Member[] = [];
   for (const row of roster) {
     const member = await prisma.member.create({
       data: {
