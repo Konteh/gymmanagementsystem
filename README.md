@@ -49,7 +49,7 @@ npm run dev
 
 `npm run db:setup` writes a **local SQLite** file (`prisma/gymflow.db`) on your machine and seeds Gambian demo gyms. Amounts are in **GMD**, shown as **D** (for example D1,500). After pulling this change, run `npm run db:setup` once so the old USD seed is replaced.
 
-If Prisma says it cannot add required `checkInToken` because Gym already has rows, stop the server, pull this update, then run `db:setup` again. The column is optional first; existing gyms get a token without wiping the file. Do not use `prisma db push --force-reset` unless you want to throw away local data. If the database file is locked or still blocked:
+If Prisma says it cannot add required `checkInToken`, or the Super Admin owners page errors with `checkInToken` null, stop the server, pull this update, then run `db:setup` again. Existing gyms get a door token without wiping the file. Do not use `prisma db push --force-reset` unless you want to throw away local data. If the database file is locked or still blocked:
 
 ```powershell
 Remove-Item prisma\gymflow.db, prisma\gymflow.db-journal -ErrorAction SilentlyContinue

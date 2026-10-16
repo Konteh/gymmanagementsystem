@@ -3,9 +3,17 @@
  * Prisma cannot add a required column with a Prisma-level default onto
  * gyms that already exist. Making it optional first avoids --force-reset.
  */
+import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+const DEMO_CHECK_IN = {
+  "33333333-3333-4333-8333-333333333333": "demo-bakau-powerhouse",
+  "55555555-5555-4555-8555-555555555555": "demo-brikama-motion",
+  "77777777-7777-4777-8777-777777777777": "demo-banjul-harbor",
+  "99999999-9999-4999-8999-999999999999": "demo-lamin-boxing",
+};
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dbFile = process.argv[2] || path.join(root, "prisma", "gymflow.db");
@@ -29,6 +37,14 @@ try {
     console.log("Added optional Gym.checkInToken (no database reset).");
   }
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS Gym_checkInToken_key ON Gym(checkInToken)");
+  const missing = db.prepare("SELECT id FROM Gym WHERE checkInToken IS NULL OR checkInToken = ''").all();
+  const update = db.prepare("UPDATE Gym SET checkInToken = ? WHERE id = ?");
+  for (const row of missing) {
+    update.run(DEMO_CHECK_IN[row.id] ?? randomBytes(16).toString("hex"), row.id);
+  }
+  if (missing.length) {
+    console.log(`Filled check-in tokens for ${missing.length} gym(s).`);
+  }
   db.close();
 } catch {
   // Node 20 has no node:sqlite. `prisma db push` can still add an optional column.
