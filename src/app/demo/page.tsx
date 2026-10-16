@@ -128,6 +128,9 @@ export default function DemoFlowPage() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <Logo />
           <div className="flex items-center gap-2">
+            <a href="/GymFlow-demo-flow.pdf" download className={cn(buttonVariants({ variant: "outline" }))}>
+              Download PDF
+            </a>
             <Link href="/" className={cn(buttonVariants({ variant: "ghost" }))}>
               Home
             </Link>

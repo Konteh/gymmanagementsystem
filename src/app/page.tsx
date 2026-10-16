@@ -81,6 +81,9 @@ export default function LandingPage() {
             <Link href="/demo" className="hover:text-ink">
               Demo flow
             </Link>
+            <a href="/GymFlow-demo-flow.pdf" className="hover:text-ink">
+              Demo PDF
+            </a>
             <a href="#features" className="hover:text-ink">
               Product
             </a>
