@@ -37,6 +37,9 @@ export default async function PendingPage() {
             <Link href="/owner/members" className={cn(buttonVariants())}>
               Register members
             </Link>
+            <Link href="/owner/qr" className={cn(buttonVariants({ variant: "outline" }))}>
+              Print door QR
+            </Link>
             <Link href="/owner/payments" className={cn(buttonVariants({ variant: "outline" }))}>
               Accept dues
             </Link>

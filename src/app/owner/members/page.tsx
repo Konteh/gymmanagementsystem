@@ -27,7 +27,7 @@ export default async function MembersPage() {
       <PageHeader
         eyebrow={session.gymName ?? "Gym"}
         title="Members"
-        description="Quick registration from the desk. Members cannot sign themselves up."
+        description="Add people at the desk. They do not get a login. They scan the gym QR and check in with their phone number."
       />
       <MembersClient
         gymId={session.gymId!}

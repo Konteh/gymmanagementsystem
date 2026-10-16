@@ -28,7 +28,7 @@ export async function createMemberIntent(input: {
   gymId: string;
   amount: number;
   currency: string;
-  actorId: string;
+  actorId?: string;
 }) {
   const open = await prisma.paymentMember.findFirst({
     where: { memberId: input.memberId, gymId: input.gymId, status: "pending" },
@@ -88,6 +88,51 @@ export async function acceptMemberPayment(input: {
     metadata: { source: "desk_demo" },
   });
   return updated;
+}
+
+export async function recordDeskPayment(input: {
+  memberId: string;
+  gymId: string;
+  actorId: string;
+}) {
+  const member = await prisma.member.findFirst({
+    where: { id: input.memberId, gymId: input.gymId },
+    include: { plan: true },
+  });
+  if (!member) throw new ApiError(404, "not_found", "Member not found.");
+  const open = await prisma.paymentMember.findFirst({
+    where: { memberId: member.id, gymId: input.gymId, status: { in: ["pending", "failed"] } },
+    orderBy: { createdAt: "desc" },
+  });
+  if (open) {
+    return acceptMemberPayment({
+      paymentId: open.id,
+      gymId: input.gymId,
+      actorId: input.actorId,
+    });
+  }
+  const payment = await prisma.paymentMember.create({
+    data: {
+      memberId: member.id,
+      gymId: input.gymId,
+      amount: Number(member.plan.price),
+      currency: member.plan.currency,
+      status: "paid",
+      paidAt: new Date(),
+      providerRef: `desk_${randomBytes(4).toString("hex")}`,
+    },
+    include: { member: true },
+  });
+  await extendMembership(member.id);
+  await writeAudit({
+    actorId: input.actorId,
+    gymId: input.gymId,
+    action: "payment_recorded_at_desk",
+    entityType: "payments_member",
+    entityId: payment.id,
+    metadata: { source: "manual_activation" },
+  });
+  return payment;
 }
 
 export async function applyProviderEvent(input: {

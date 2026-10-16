@@ -7,7 +7,6 @@ const secret = new TextEncoder().encode(JWT_SECRET);
 const ROLE_HOME: Record<string, string> = {
   super_admin: "/admin",
   gym_owner: "/owner",
-  member: "/member",
 };
 
 export async function proxy(request: NextRequest) {
@@ -28,14 +27,13 @@ export async function proxy(request: NextRequest) {
   const isSetPassword = pathname === "/set-password";
   const isAdmin = pathname.startsWith("/admin");
   const isOwner = pathname.startsWith("/owner");
-  const isMember = pathname.startsWith("/member");
   const isPay = pathname.startsWith("/pay");
 
   if (isAuthPage && role) {
     return NextResponse.redirect(new URL(ROLE_HOME[role] ?? "/", request.url));
   }
 
-  if ((isAdmin || isOwner || isMember || isPay || isSetPassword) && !role) {
+  if ((isAdmin || isOwner || isPay || isSetPassword) && !role) {
     const login = new URL("/login", request.url);
     login.searchParams.set("next", pathname);
     return NextResponse.redirect(login);
@@ -45,9 +43,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(ROLE_HOME[role ?? ""] ?? "/", request.url));
   }
   if (isOwner && role !== "gym_owner") {
-    return NextResponse.redirect(new URL(ROLE_HOME[role ?? ""] ?? "/", request.url));
-  }
-  if (isMember && role !== "member") {
     return NextResponse.redirect(new URL(ROLE_HOME[role ?? ""] ?? "/", request.url));
   }
 
@@ -64,8 +59,6 @@ export const config = {
     "/admin/:path*",
     "/owner",
     "/owner/:path*",
-    "/member",
-    "/member/:path*",
     "/pay/:path*",
     "/set-password",
   ],

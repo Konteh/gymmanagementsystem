@@ -14,7 +14,6 @@ const demos = [
   { role: "Super Admin", email: "iris.p@example.org" },
   { role: "Gym Owner", email: "maria.s@example.com" },
   { role: "Pending owner", email: "uma.s@example.org" },
-  { role: "Member", email: "victor.l@example.com" },
 ];
 
 export default function LoginPage() {
@@ -49,11 +48,11 @@ export default function LoginPage() {
         <div className="hidden lg:block">
           <Logo />
           <h1 className="mt-8 text-4xl font-semibold tracking-tight text-ink">
-            Sign in to the desk, the floor, or the platform.
+            Sign in to run a gym or the platform.
           </h1>
           <p className="mt-4 max-w-md text-muted-foreground">
-            Role routing is deterministic. Owners land on their gym, members on
-            their membership, Super Admins on the operator console.
+            Super Admins review gym owners. Owners add members at the desk.
+            Members do not log in — they scan the door QR with their phone camera.
           </p>
         </div>
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
@@ -62,7 +61,7 @@ export default function LoginPage() {
           </div>
           <h2 className="mt-4 text-xl font-semibold text-ink lg:mt-0">Log in</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Members sign in with the one-time password from their gym, then choose their own.
+            Gym owners and Super Admins only. Members check in by QR.
           </p>
           <div className="mt-6 space-y-4">
             <div className="space-y-1.5">

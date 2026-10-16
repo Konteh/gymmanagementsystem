@@ -35,4 +35,10 @@ export const IDS = {
   northsideGym: "99999999-9999-4999-8999-999999999999",
   jordan: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   staffKai: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  bakauCheckIn: "demo-bakau-powerhouse",
+  brikamaCheckIn: "demo-brikama-motion",
+  harborCheckIn: "demo-banjul-harbor",
+  laminCheckIn: "demo-lamin-boxing",
 } as const;
+
+export const PRODUCT_SHAPE = "desk_qr_v1";

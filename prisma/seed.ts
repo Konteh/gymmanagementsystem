@@ -12,7 +12,9 @@ import {
   IDS,
   PLAN_PRICES,
   PLATFORM_FEE_DEFAULT,
+  PRODUCT_SHAPE,
 } from "../src/lib/constants";
+import { normalizePhone } from "../src/lib/phone";
 
 const prisma = new PrismaClient();
 
@@ -38,30 +40,18 @@ async function resetLocalData() {
   await prisma.user.deleteMany();
 }
 
-async function normalizeToGmd() {
-  await prisma.membershipPlan.updateMany({ data: { currency: DEFAULT_CURRENCY } });
-  await prisma.paymentMember.updateMany({ data: { currency: DEFAULT_CURRENCY } });
-  await prisma.paymentPlatform.updateMany({ data: { currency: DEFAULT_CURRENCY } });
-  await prisma.systemSetting.upsert({
-    where: { key: "default_currency" },
-    create: { key: "default_currency", value: JSON.stringify(DEFAULT_CURRENCY), updatedBy: IDS.superAdmin },
-    update: { value: JSON.stringify(DEFAULT_CURRENCY) },
-  });
-}
-
 async function main() {
   const existing = await prisma.user.findUnique({ where: { id: IDS.superAdmin } });
-  const currencySetting = await prisma.systemSetting.findUnique({ where: { key: "default_currency" } });
-  const currentCurrency = currencySetting ? (JSON.parse(currencySetting.value) as string) : null;
+  const shape = await prisma.systemSetting.findUnique({ where: { key: "product_shape" } }).catch(() => null);
+  const currentShape = shape ? (JSON.parse(shape.value) as string) : null;
 
-  if (existing && currentCurrency === DEFAULT_CURRENCY) {
-    await normalizeToGmd();
-    console.log("Local GMD seed already applied.");
+  if (existing && currentShape === PRODUCT_SHAPE) {
+    console.log("Desk QR seed already applied.");
     return;
   }
 
   if (existing) {
-    console.log("Replacing USD seed with local Gambian (GMD) data.");
+    console.log("Replacing previous seed with desk QR (no member login) data.");
     await resetLocalData();
   }
 
@@ -96,10 +86,11 @@ async function main() {
       email: "samuel.w@example.com",
       address: "Bertil Harding Highway, Bakau, Kanifing Municipality",
       status: "active",
+      checkInToken: IDS.bakauCheckIn,
       settingsJson: JSON.stringify({
         currency: DEFAULT_CURRENCY,
         timezone: DEFAULT_TIMEZONE,
-        checkin_notes: "Members check in at the front desk or with a staff code.",
+        checkin_notes: "Members scan the printed QR at the door.",
       }),
       createdAt: daysAgo(210),
     },
@@ -139,7 +130,7 @@ async function main() {
   const roster: Array<{
     id?: string;
     name: string;
-    email: string;
+    email?: string;
     phone: string;
     planId: string;
     status: MemberStatus;
@@ -147,40 +138,31 @@ async function main() {
     expiresIn: number | null;
   }> = [
     { id: IDS.jordan, name: "Lamin Jallow", email: "victor.l@example.com", phone: "+220 301 1191", planId: monthly.id, status: "active", joined: 86, expiresIn: 18 },
-    { name: "Fatou Ceesay", email: "nathan.k@example.net", phone: "+220 333 2214", planId: quarterly.id, status: "active", joined: 140, expiresIn: 52 },
-    { name: "Ebrima Touray", email: "yosef.c@example.com", phone: "+220 705 1840", planId: monthly.id, status: "active", joined: 44, expiresIn: 12 },
-    { name: "Awa Njie", email: "sofia.alvarez@example.com", phone: "+220 366 9012", planId: monthly.id, status: "expired", joined: 120, expiresIn: -6 },
-    { name: "Omar Sanyang", email: "noah.patel@example.com", phone: "+220 990 4418", planId: quarterly.id, status: "inactive", joined: 200, expiresIn: 20 },
-    { name: "Isatou Camara", email: "avery.kim@example.com", phone: "+220 318 7721", planId: monthly.id, status: "active", joined: 21, expiresIn: 9 },
-    { name: "Modou Bah", email: "liam.brooks@example.com", phone: "+220 722 1560", planId: dayPass.id, status: "active", joined: 1, expiresIn: 0 },
-    { name: "Mariama Darboe", email: "maya.ortiz@example.com", phone: "+220 345 8803", planId: monthly.id, status: "active", joined: 63, expiresIn: 4 },
-    { name: "Yankuba Colley", email: "chris.nguyen@example.com", phone: "+220 611 0944", planId: quarterly.id, status: "active", joined: 70, expiresIn: 40 },
-    { name: "Adama Jaiteh", email: "hannah.cole@example.com", phone: "+220 377 2109", planId: monthly.id, status: "active", joined: 15, expiresIn: 15 },
-    { name: "Kaddy Manneh", email: "diego.santos@example.com", phone: "+220 509 6631", planId: monthly.id, status: "expired", joined: 95, expiresIn: -11 },
-    { name: "Pa Saine", email: "riley.thompson@example.com", phone: "+220 220 4488", planId: monthly.id, status: "active", joined: 8, expiresIn: 22 },
-    { name: "Binta Jammeh", email: "samira.haddad@example.com", phone: "+220 688 1307", planId: quarterly.id, status: "active", joined: 33, expiresIn: 57 },
-    { name: "Ousman Ceesay", email: "owen.park@example.com", phone: "+220 441 7755", planId: monthly.id, status: "inactive", joined: 160, expiresIn: 2 },
+    { name: "Fatou Ceesay", phone: "+220 333 2214", planId: quarterly.id, status: "active", joined: 140, expiresIn: 52 },
+    { name: "Ebrima Touray", phone: "+220 705 1840", planId: monthly.id, status: "active", joined: 44, expiresIn: 12 },
+    { name: "Awa Njie", phone: "+220 366 9012", planId: monthly.id, status: "expired", joined: 120, expiresIn: -6 },
+    { name: "Omar Sanyang", phone: "+220 990 4418", planId: quarterly.id, status: "inactive", joined: 200, expiresIn: 20 },
+    { name: "Isatou Camara", phone: "+220 318 7721", planId: monthly.id, status: "active", joined: 21, expiresIn: 9 },
+    { name: "Modou Bah", phone: "+220 722 1560", planId: dayPass.id, status: "active", joined: 1, expiresIn: 0 },
+    { name: "Mariama Darboe", phone: "+220 345 8803", planId: monthly.id, status: "active", joined: 63, expiresIn: 4 },
+    { name: "Yankuba Colley", phone: "+220 611 0944", planId: quarterly.id, status: "active", joined: 70, expiresIn: 40 },
+    { name: "Adama Jaiteh", phone: "+220 377 2109", planId: monthly.id, status: "active", joined: 15, expiresIn: 15 },
+    { name: "Kaddy Manneh", phone: "+220 509 6631", planId: monthly.id, status: "expired", joined: 95, expiresIn: -11 },
+    { name: "Pa Saine", phone: "+220 220 4488", planId: monthly.id, status: "active", joined: 8, expiresIn: 22 },
+    { name: "Binta Jammeh", phone: "+220 688 1307", planId: quarterly.id, status: "active", joined: 33, expiresIn: 57 },
+    { name: "Ousman Ceesay", phone: "+220 441 7755", planId: monthly.id, status: "inactive", joined: 160, expiresIn: 2 },
   ];
 
   const members = [];
   for (const row of roster) {
-    const user = await prisma.user.create({
-      data: {
-        ...(row.id ? { id: row.id } : {}),
-        email: row.email,
-        passwordHash,
-        role: "member",
-        status: "active",
-      },
-    });
     const member = await prisma.member.create({
       data: {
+        ...(row.id ? { id: row.id } : {}),
         gymId: gym.id,
-        userId: user.id,
         planId: row.planId,
         fullName: row.name,
-        phone: row.phone,
-        email: row.email,
+        phone: normalizePhone(row.phone),
+        email: row.email ?? null,
         status: row.status,
         joinedAt: daysAgo(row.joined),
         expiresAt: row.expiresIn === null ? null : daysAgo(-row.expiresIn),
@@ -224,7 +206,7 @@ async function main() {
           memberId: member.id,
           gymId: gym.id,
           checkedInAt: daysAgo(day, 6 + (day % 8)),
-          source: day % 4 === 0 ? "owner" : "front_desk",
+          source: day % 4 === 0 ? "qr" : "front_desk",
         },
       });
     }
@@ -247,6 +229,7 @@ async function main() {
     address: string,
     status: GymStatus,
     reason: string | null,
+    checkInToken: string,
     userStatus: "active" | "suspended" = "active",
   ) {
     await prisma.user.create({
@@ -262,6 +245,7 @@ async function main() {
         address,
         status,
         statusReason: reason,
+        checkInToken,
         settingsJson: JSON.stringify({
           currency: DEFAULT_CURRENCY,
           timezone: DEFAULT_TIMEZONE,
@@ -279,6 +263,7 @@ async function main() {
     "Kombo Central, Brikama",
     "pending",
     null,
+    IDS.brikamaCheckIn,
   );
   await otherGym(
     IDS.harborOwner,
@@ -289,6 +274,7 @@ async function main() {
     "Independence Drive, Banjul",
     "suspended",
     "Past-due platform invoices and unresolved billing dispute.",
+    IDS.harborCheckIn,
     "suspended",
   );
   await otherGym(
@@ -300,6 +286,7 @@ async function main() {
     "Lamin Village, West Coast Region",
     "rejected",
     "Could not verify facility insurance documents.",
+    IDS.laminCheckIn,
   );
 
   await prisma.paymentPlatform.createMany({
@@ -315,6 +302,7 @@ async function main() {
       { key: "default_currency", value: JSON.stringify(DEFAULT_CURRENCY), updatedBy: IDS.superAdmin },
       { key: "support_email", value: JSON.stringify("quinn.m@example.net"), updatedBy: IDS.superAdmin },
       { key: "maintenance_mode", value: JSON.stringify(false), updatedBy: IDS.superAdmin },
+      { key: "product_shape", value: JSON.stringify(PRODUCT_SHAPE), updatedBy: IDS.superAdmin },
     ],
   });
 
@@ -326,7 +314,7 @@ async function main() {
     ],
   });
 
-  console.log("GymFlow local GMD seed complete.");
+  console.log("GymFlow desk QR seed complete. Demo check-in: /g/demo-bakau-powerhouse");
 }
 
 main()

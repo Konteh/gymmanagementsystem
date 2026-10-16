@@ -5,7 +5,7 @@ import { getSession } from "@/lib/auth";
 const HOME: Record<string, string> = {
   super_admin: "/admin",
   gym_owner: "/owner",
-  member: "/member",
+  member: "/",
 };
 
 export default async function SetPasswordLayout({ children }: { children: ReactNode }) {

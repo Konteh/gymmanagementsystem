@@ -62,18 +62,19 @@ model User {
 }
 
 model Gym {
-  id           String    @id @default(uuid())
-  ownerId      String    @unique
-  owner        User      @relation(fields: [ownerId], references: [id], onDelete: Restrict)
-  name         String
-  phone        String?
-  email        String?
-  address      String?
-  status       GymStatus @default(pending)
-  statusReason String?
-  settingsJson String    @default("{}")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id            String    @id @default(uuid())
+  ownerId       String    @unique
+  owner         User      @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  name          String
+  phone         String?
+  email         String?
+  address       String?
+  status        GymStatus @default(pending)
+  statusReason  String?
+  settingsJson  String    @default("{}")
+  checkInToken  String    @unique @default(uuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   admins     GymAdmin[]
   plans      MembershipPlan[]
@@ -116,13 +117,13 @@ model Member {
   id        String       @id @default(uuid())
   gymId     String
   gym       Gym          @relation(fields: [gymId], references: [id], onDelete: Restrict)
-  userId    String       @unique
-  user      User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  userId    String?      @unique
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   planId    String
   plan      MembershipPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
   fullName  String
-  phone     String?
-  email     String
+  phone     String
+  email     String?
   photoUrl  String?
   status    MemberStatus @default(active)
   joinedAt  DateTime     @default(now())
@@ -133,8 +134,9 @@ model Member {
   payments   PaymentMember[]
   attendance Attendance[]
 
-  @@unique([gymId, email])
+  @@unique([gymId, phone])
   @@index([gymId, status])
+  @@index([gymId, fullName])
 }
 
 model PaymentPlatform {

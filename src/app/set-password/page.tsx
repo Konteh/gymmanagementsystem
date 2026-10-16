@@ -31,7 +31,7 @@ export default function SetPasswordPage() {
         }),
       });
       toast.success("Your password is set. Opening your membership…");
-      window.location.assign(result.next || "/member");
+      window.location.assign(result.next || "/");
     } catch (error) {
       setPending(false);
       toast.error(error instanceof ClientApiError ? error.message : "Could not save your password");

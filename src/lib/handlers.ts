@@ -19,6 +19,8 @@ import {
 } from "@/lib/auth";
 import { ownerAnalytics, platformAnalytics } from "@/lib/analytics";
 import { DEFAULT_CURRENCY, DEFAULT_TIMEZONE, PLAN_PRICES, PLATFORM_FEE_DEFAULT } from "@/lib/constants";
+import { gymByCheckInToken, lookupPublicMember, newCheckInToken } from "@/lib/check-in";
+import { normalizePhone } from "@/lib/phone";
 import { ApiError, ok, readJson } from "@/lib/http";
 import { addDays, getPlanForGym, syncExpiredMembers } from "@/lib/membership";
 import {
@@ -27,6 +29,7 @@ import {
   createMemberIntent,
   demoEventId,
   demoRef,
+  recordDeskPayment,
   signWebhook,
   verifyWebhookSignature,
 } from "@/lib/payments";
@@ -78,11 +81,14 @@ function emptyToUndefined(value: unknown) {
 
 const memberSchema = z.object({
   full_name: z.string().trim().min(2).max(160),
-  email: z.string().trim().email(),
-  phone: z.preprocess(emptyToUndefined, z.string().max(40).optional()),
+  phone: z.string().trim().min(7).max(40),
+  email: z.preprocess(emptyToUndefined, z.string().trim().email().optional()),
   plan_id: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   photo_url: z.preprocess(emptyToUndefined, z.string().max(400000).optional()),
-  password: z.preprocess(emptyToUndefined, z.string().min(8).max(72).optional()),
+});
+
+const publicPhoneSchema = z.object({
+  phone: z.string().trim().min(7).max(40),
 });
 
 function parse<T>(schema: z.ZodType<T>, data: unknown): T {
@@ -124,10 +130,11 @@ export async function handleSignup({ request, requestId }: RouteCtx) {
         email,
         address: body.address,
         status: "pending",
+        checkInToken: newCheckInToken(),
         settingsJson: JSON.stringify({
           currency: DEFAULT_CURRENCY,
           timezone: DEFAULT_TIMEZONE,
-          checkin_notes: "Members check in at the front desk.",
+          checkin_notes: "Members scan the gym QR code at the door.",
         }),
       },
     });
@@ -183,6 +190,13 @@ export async function handleLogin({ request, requestId }: RouteCtx) {
   if (user.status === "suspended" || user.status === "deleted") {
     throw new ApiError(403, "forbidden", "This account cannot sign in.");
   }
+  if (user.role === "member") {
+    throw new ApiError(
+      403,
+      "forbidden",
+      "Gym members do not sign in. Scan the gym QR code with your phone camera.",
+    );
+  }
 
   const tokens = await issueSession(user.id, user.email, user.role);
   const ctx = await buildAuthContext(user.id);
@@ -190,11 +204,9 @@ export async function handleLogin({ request, requestId }: RouteCtx) {
     ? "/set-password"
     : user.role === "super_admin"
       ? "/admin"
-      : user.role === "member"
-        ? "/member"
-        : ctx.gymStatus === "active"
-          ? "/owner"
-          : "/owner/pending";
+      : ctx.gymStatus === "active"
+        ? "/owner"
+        : "/owner/pending";
   const response = ok(requestId, {
     user: publicUser(user),
     next,
@@ -223,8 +235,7 @@ export async function handleSetPassword({ request, requestId }: RouteCtx) {
     },
   });
   const tokens = await issueSession(user.id, user.email, user.role);
-  const home =
-    user.role === "super_admin" ? "/admin" : user.role === "member" ? "/member" : "/owner";
+  const home = user.role === "super_admin" ? "/admin" : "/owner";
   const response = ok(requestId, { next: home, must_change_password: false });
   return applyAuthCookies(response, tokens.access, tokens.refresh, request);
 }
@@ -450,59 +461,32 @@ export async function handleRegisterMember({ request, params, requestId }: Route
     throw new ApiError(400, "gym_missing", "Your gym profile is not ready yet. Sign out, sign in, and try again.");
   }
   const body = parse(memberSchema, await readJson(request));
-  const email = normalizeEmail(body.email);
+  const phone = normalizePhone(body.phone);
+  if (phone.replace(/\D/g, "").length < 7) {
+    throw new ApiError(400, "invalid_input", "Enter a valid phone number. Members use it to check in.");
+  }
+  const email = body.email ? normalizeEmail(body.email) : null;
   const plan = await getPlanForGym(body.plan_id, ctx.gymId);
 
-  const existingUser = await prisma.user.findUnique({
-    where: { email },
-    include: { memberProfile: true },
+  const existing = await prisma.member.findFirst({
+    where: { gymId: ctx.gymId, phone },
   });
-  if (existingUser && existingUser.role !== "member") {
-    throw new ApiError(
-      409,
-      "role_conflict",
-      "That email is already used by a gym owner or staff account. Use a different member email.",
-    );
-  }
-  if (existingUser?.memberProfile) {
-    throw new ApiError(
-      409,
-      "account_exists",
-      existingUser.memberProfile.gymId === ctx.gymId
-        ? "This member is already on your roster."
-        : "This email is already registered at another gym.",
-    );
+  if (existing) {
+    throw new ApiError(409, "account_exists", "A member with that phone number is already on your roster.");
   }
 
-  const temporaryPassword = body.password ?? `Member-${Math.random().toString(36).slice(2, 10)}!`;
-  const passwordHash = existingUser ? existingUser.passwordHash : await hashPassword(temporaryPassword);
-  const member = await prisma.$transaction(async (tx) => {
-    const user =
-      existingUser ??
-      (await tx.user.create({
-        data: {
-          email,
-          passwordHash,
-          role: "member",
-          status: "active",
-          mustChangePassword: true,
-        },
-      }));
-    const created = await tx.member.create({
-      data: {
-        gymId: ctx.gymId!,
-        userId: user.id,
-        planId: plan.id,
-        fullName: body.full_name,
-        phone: body.phone,
-        email,
-        photoUrl: body.photo_url,
-        status: "active",
-        expiresAt: addDays(new Date(), plan.durationDays),
-      },
-      include: { plan: true },
-    });
-    return created;
+  const member = await prisma.member.create({
+    data: {
+      gymId: ctx.gymId,
+      planId: plan.id,
+      fullName: body.full_name,
+      phone,
+      email,
+      photoUrl: body.photo_url,
+      status: "active",
+      expiresAt: addDays(new Date(), plan.durationDays),
+    },
+    include: { plan: true },
   });
 
   await writeAudit({
@@ -513,14 +497,28 @@ export async function handleRegisterMember({ request, params, requestId }: Route
     entityId: member.id,
   });
 
-  return ok(
-    requestId,
-    {
-      member: serializeMember(member),
-      temporary_password: existingUser ? null : temporaryPassword,
-    },
-    201,
+  return ok(requestId, { member: serializeMember(member) }, 201);
+}
+
+export async function handleActivateMemberPayment({ request, params, requestId }: RouteCtx) {
+  const ctx = await requireAuth(
+    request,
+    { roles: ["gym_owner"], tenantScoped: true },
+    params.gymId,
   );
+  const payment = await recordDeskPayment({
+    memberId: params.memberId,
+    gymId: ctx.gymId!,
+    actorId: ctx.userId,
+  });
+  const member = await prisma.member.findUnique({
+    where: { id: params.memberId },
+    include: { plan: true },
+  });
+  return ok(requestId, {
+    payment: serializeMemberPayment(payment),
+    member: member ? serializeMember(member) : null,
+  });
 }
 
 export async function handlePatchMember({ request, params, requestId }: RouteCtx) {
@@ -770,6 +768,88 @@ export async function handleCheckIn({ request, params, requestId }: RouteCtx) {
     data: { memberId: member.id, gymId: ctx.gymId!, source: "front_desk" },
   });
   return ok(requestId, serializeAttendance(row), 201);
+}
+
+export async function handlePublicGym({ request, params, requestId }: RouteCtx) {
+  const gym = await gymByCheckInToken(params.token);
+  return ok(requestId, {
+    name: gym.name,
+    address: gym.address,
+    phone: gym.phone,
+  });
+}
+
+export async function handlePublicLookup({ request, params, requestId }: RouteCtx) {
+  const ip = request.headers.get("x-forwarded-for") ?? "local";
+  const limited = rateLimit(`public-lookup:${params.token}:${ip}`, 30, 10 * 60 * 1000);
+  if (!limited.ok) throw new ApiError(429, "rate_limited", "Too many attempts. Wait a moment.");
+  const body = parse(publicPhoneSchema, await readJson(request));
+  const { card } = await lookupPublicMember(params.token, body.phone);
+  return ok(requestId, card);
+}
+
+export async function handlePublicCheckIn({ request, params, requestId }: RouteCtx) {
+  const ip = request.headers.get("x-forwarded-for") ?? "local";
+  const limited = rateLimit(`public-checkin:${params.token}:${ip}`, 40, 10 * 60 * 1000);
+  if (!limited.ok) throw new ApiError(429, "rate_limited", "Too many attempts. Wait a moment.");
+  const body = parse(publicPhoneSchema, await readJson(request));
+  const { gym, member, card } = await lookupPublicMember(params.token, body.phone);
+  if (!card.can_check_in) {
+    throw new ApiError(
+      400,
+      "inactive_member",
+      "This membership is not active. Ask the desk to activate payment, or renew below.",
+    );
+  }
+  const recent = await prisma.attendance.findFirst({
+    where: {
+      memberId: member.id,
+      gymId: gym.id,
+      checkedInAt: { gte: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+    },
+    orderBy: { checkedInAt: "desc" },
+  });
+  if (recent) {
+    return ok(requestId, {
+      already_checked_in: true,
+      attendance: serializeAttendance(recent),
+      member: card,
+    });
+  }
+  const row = await prisma.attendance.create({
+    data: { memberId: member.id, gymId: gym.id, source: "qr" },
+  });
+  await writeAudit({
+    gymId: gym.id,
+    action: "member_checked_in",
+    entityType: "attendance",
+    entityId: row.id,
+    metadata: { source: "qr" },
+  });
+  return ok(requestId, { already_checked_in: false, attendance: serializeAttendance(row), member: card }, 201);
+}
+
+export async function handlePublicPay({ request, params, requestId }: RouteCtx) {
+  const ip = request.headers.get("x-forwarded-for") ?? "local";
+  const limited = rateLimit(`public-pay:${params.token}:${ip}`, 20, 10 * 60 * 1000);
+  if (!limited.ok) throw new ApiError(429, "rate_limited", "Too many attempts. Wait a moment.");
+  const body = parse(publicPhoneSchema, await readJson(request));
+  const { gym, member, card } = await lookupPublicMember(params.token, body.phone);
+  const payment = await createMemberIntent({
+    memberId: member.id,
+    gymId: gym.id,
+    amount: Number(member.plan.price),
+    currency: member.plan.currency,
+  });
+  return ok(
+    requestId,
+    {
+      payment: serializeMemberPayment(payment),
+      member: card,
+      message: "Payment sent to the desk. Staff will activate your membership once it is confirmed.",
+    },
+    201,
+  );
 }
 
 export async function handleMe({ request, requestId }: RouteCtx) {

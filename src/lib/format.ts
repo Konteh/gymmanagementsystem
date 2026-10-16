@@ -1,4 +1,4 @@
-import { format, formatDistanceToNow } from "date-fns";
+import { differenceInCalendarDays, format, formatDistanceToNow } from "date-fns";
 import { DEFAULT_CURRENCY } from "@/lib/constants";
 
 export function money(amount: number | string, _currency = DEFAULT_CURRENCY) {
@@ -25,4 +25,13 @@ export function relative(value: string | Date) {
 
 export function percent(value: number) {
   return `${value.toFixed(1)}%`;
+}
+
+export function daysLeftLabel(expiresAt: string | Date | null | undefined) {
+  if (!expiresAt) return "No end date";
+  const days = differenceInCalendarDays(new Date(expiresAt), new Date());
+  if (days < 0) return `Ended ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} ago`;
+  if (days === 0) return "Ends today";
+  if (days === 1) return "1 day left";
+  return `${days} days left`;
 }

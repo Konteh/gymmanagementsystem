@@ -16,7 +16,7 @@ import {
   Building2,
   ClipboardList,
   Dumbbell,
-  UserCircle,
+  QrCode,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -39,15 +39,11 @@ const NAV: Record<string, Item[]> = {
   gym_owner: [
     { href: "/owner", label: "Dashboard", icon: LayoutDashboard },
     { href: "/owner/members", label: "Members", icon: Users },
+    { href: "/owner/qr", label: "Door QR", icon: QrCode },
     { href: "/owner/payments", label: "Dues", icon: CreditCard },
     { href: "/owner/plans", label: "Plans", icon: ClipboardList },
     { href: "/owner/staff", label: "Staff", icon: Dumbbell },
     { href: "/owner/settings", label: "Gym settings", icon: Settings },
-  ],
-  member: [
-    { href: "/member", label: "Home", icon: UserCircle },
-    { href: "/member/payments", label: "My dues", icon: CreditCard },
-    { href: "/member/attendance", label: "My visits", icon: ClipboardList },
   ],
 };
 
@@ -63,7 +59,7 @@ function NavList({
     <nav className="flex flex-col gap-1">
       {items.map((item) => {
         const active =
-          item.href === "/admin" || item.href === "/owner" || item.href === "/member"
+          item.href === "/admin" || item.href === "/owner"
             ? pathname === item.href
             : pathname.startsWith(item.href);
         const Icon = item.icon;
@@ -102,6 +98,7 @@ export function AppShell({
       ? [
           { href: "/owner/pending", label: "Onboarding", icon: LayoutDashboard },
           { href: "/owner/members", label: "Members", icon: Users },
+          { href: "/owner/qr", label: "Door QR", icon: QrCode },
           { href: "/owner/payments", label: "Dues", icon: CreditCard },
           { href: "/owner/plans", label: "Plans", icon: ClipboardList },
           { href: "/owner/staff", label: "Staff", icon: Dumbbell },

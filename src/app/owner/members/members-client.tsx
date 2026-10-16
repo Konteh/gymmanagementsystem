@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { StatusBadge } from "@/components/status-badge";
@@ -33,14 +32,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { api, ClientApiError } from "@/lib/api-client";
-import { money, shortDate } from "@/lib/format";
+import { daysLeftLabel, money, shortDate } from "@/lib/format";
 
 type Plan = { id: string; name: string; price: number; currency: string; duration_days: number; active: boolean };
 type Member = {
   id: string;
   full_name: string;
-  email: string;
-  phone: string | null;
+  email: string | null;
+  phone: string;
   photo_url: string | null;
   status: string;
   joined_at: string;
@@ -62,24 +61,16 @@ export function MembersClient({
   const [status, setStatus] = useState("all");
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [credentials, setCredentials] = useState<{
-    name: string;
-    email: string;
-    password: string;
-  } | null>(null);
+  const [activating, setActivating] = useState<Member | null>(null);
   const activePlans = plans.filter((plan) => plan.active);
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [planId, setPlanId] = useState(activePlans[0]?.id ?? "");
 
   const rows = useMemo(() => {
     return members.filter((member) => {
-      const matchesQuery =
-        !query ||
-        member.full_name.toLowerCase().includes(query.toLowerCase()) ||
-        member.email.toLowerCase().includes(query.toLowerCase());
+      const haystack = `${member.full_name} ${member.phone} ${member.email ?? ""}`.toLowerCase();
+      const matchesQuery = !query || haystack.includes(query.toLowerCase());
       const matchesStatus = status === "all" || member.status === status;
       return matchesQuery && matchesStatus;
     });
@@ -87,74 +78,34 @@ export function MembersClient({
 
   function resetForm() {
     setFullName("");
-    setEmail("");
     setPhone("");
     setPlanId(activePlans[0]?.id ?? "");
-    setCopied(false);
-  }
-
-  function closeDialog() {
-    const shouldRefresh = Boolean(credentials);
-    setOpen(false);
-    setCredentials(null);
-    resetForm();
-    if (shouldRefresh) router.refresh();
-  }
-
-  async function copyPassword() {
-    if (!credentials) return;
-    try {
-      await navigator.clipboard.writeText(credentials.password);
-      setCopied(true);
-      toast.success("Password copied");
-    } catch {
-      toast.error("Could not copy. Select the password and copy it yourself.");
-    }
   }
 
   async function register(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    event.stopPropagation();
-    if (!gymId) {
-      toast.error("This gym is not ready yet. Refresh and try again.");
-      return;
-    }
     const name = fullName.trim();
-    const mail = email.trim();
-    if (!name || !mail) {
-      toast.error("Name and email are required.");
+    const tel = phone.trim();
+    if (!name || !tel) {
+      toast.error("Name and phone are required.");
       return;
     }
     setPending(true);
     try {
-      const result = await api<{ member: Member; temporary_password: string | null }>(
-        `/gyms/${gymId}/members`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            full_name: name,
-            email: mail,
-            phone: phone.trim() || undefined,
-            plan_id: planId || undefined,
-          }),
-        },
-      );
+      const result = await api<{ member: Member }>(`/gyms/${gymId}/members`, {
+        method: "POST",
+        body: JSON.stringify({
+          full_name: name,
+          phone: tel,
+          plan_id: planId || undefined,
+        }),
+      });
       toast.success(`${result.member.full_name} is on the roster`);
-      if (result.temporary_password) {
-        setCredentials({
-          name: result.member.full_name,
-          email: result.member.email,
-          password: result.temporary_password,
-        });
-        setCopied(false);
-      } else {
-        setOpen(false);
-        resetForm();
-        router.refresh();
-      }
+      setOpen(false);
+      resetForm();
+      router.refresh();
     } catch (error) {
-      const message = error instanceof ClientApiError ? error.message : "Could not register member.";
-      toast.error(message);
+      toast.error(error instanceof ClientApiError ? error.message : "Could not add member.");
     } finally {
       setPending(false);
     }
@@ -170,6 +121,21 @@ export function MembersClient({
       router.refresh();
     } catch (error) {
       toast.error(error instanceof ClientApiError ? error.message : "Check-in failed");
+    }
+  }
+
+  async function activate() {
+    if (!activating) return;
+    setPending(true);
+    try {
+      await api(`/gyms/${gymId}/members/${activating.id}/activate-payment`, { method: "POST" });
+      toast.success(`Membership activated for ${activating.full_name}`);
+      setActivating(null);
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof ClientApiError ? error.message : "Could not activate payment");
+    } finally {
+      setPending(false);
     }
   }
 
@@ -191,7 +157,7 @@ export function MembersClient({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 flex-col gap-2 sm:flex-row">
           <Input
-            placeholder="Search name or email"
+            placeholder="Search name or phone"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             className="sm:max-w-xs"
@@ -211,38 +177,36 @@ export function MembersClient({
         <Button
           onClick={() => {
             resetForm();
-            setCredentials(null);
             setOpen(true);
           }}
         >
-          Register member
+          Add member
         </Button>
       </div>
       {rows.length === 0 ? (
         <EmptyState
-          title="No members match"
-          description="Register someone from the desk. Self-serve member signup is intentionally not offered."
+          title="No members yet"
+          description="Add a member from the desk. They do not create an account — they scan the gym QR to check in."
           action={
             <Button
               onClick={() => {
                 resetForm();
-                setCredentials(null);
                 setOpen(true);
               }}
             >
-              Quick register
+              Add member
             </Button>
           }
         />
       ) : (
-        <div className="rounded-xl border bg-white">
+        <div className="overflow-x-auto rounded-xl border bg-white">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Member</TableHead>
                 <TableHead>Plan</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Joined</TableHead>
+                <TableHead>Due</TableHead>
                 <TableHead className="text-right">Desk</TableHead>
               </TableRow>
             </TableHeader>
@@ -250,19 +214,8 @@ export function MembersClient({
               {rows.map((member) => (
                 <TableRow key={member.id}>
                   <TableCell>
-                    <div className="flex items-center gap-3">
-                      {member.photo_url ? (
-                        <img src={member.photo_url} alt="" className="size-8 rounded-full bg-muted" />
-                      ) : (
-                        <span className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-medium">
-                          {member.full_name.slice(0, 1)}
-                        </span>
-                      )}
-                      <div>
-                        <p className="font-medium">{member.full_name}</p>
-                        <p className="text-xs text-muted-foreground">{member.email}</p>
-                      </div>
-                    </div>
+                    <p className="font-medium">{member.full_name}</p>
+                    <p className="text-xs text-muted-foreground">{member.phone}</p>
                   </TableCell>
                   <TableCell>
                     <p>{member.plan?.name}</p>
@@ -272,23 +225,26 @@ export function MembersClient({
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={member.status} />
-                    {member.expires_at ? (
-                      <p className="mt-1 text-xs text-muted-foreground">Until {shortDate(member.expires_at)}</p>
-                    ) : null}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{shortDate(member.joined_at)}</TableCell>
+                  <TableCell>
+                    <p className="text-sm">{member.expires_at ? shortDate(member.expires_at) : "—"}</p>
+                    <p className="text-xs text-muted-foreground">{daysLeftLabel(member.expires_at)}</p>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button size="sm" variant="outline" onClick={() => checkIn(member.id)}>
+                      <Button size="sm" variant="outline" onClick={() => void checkIn(member.id)}>
                         Check in
                       </Button>
+                      <Button size="sm" onClick={() => setActivating(member)}>
+                        Activate
+                      </Button>
                       {member.status === "active" ? (
-                        <Button size="sm" variant="ghost" onClick={() => setMemberStatus(member.id, "inactive")}>
-                          Deactivate
+                        <Button size="sm" variant="ghost" onClick={() => void setMemberStatus(member.id, "inactive")}>
+                          Pause
                         </Button>
                       ) : (
-                        <Button size="sm" variant="ghost" onClick={() => setMemberStatus(member.id, "active")}>
-                          Activate
+                        <Button size="sm" variant="ghost" onClick={() => void setMemberStatus(member.id, "active")}>
+                          Resume
                         </Button>
                       )}
                     </div>
@@ -302,129 +258,92 @@ export function MembersClient({
 
       <Dialog
         open={open}
-        disablePointerDismissal={pending || Boolean(credentials)}
-        onOpenChange={(next, eventDetails) => {
-          if (!next && (pending || credentials)) {
-            eventDetails.cancel();
-            return;
-          }
-          if (!next) closeDialog();
-          else setOpen(true);
+        disablePointerDismissal={pending}
+        onOpenChange={(next) => {
+          if (pending && !next) return;
+          setOpen(next);
+          if (!next) resetForm();
         }}
       >
-        <DialogContent className="sm:max-w-lg" showCloseButton={!credentials}>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{credentials ? "Share the one-time password" : "Quick registration"}</DialogTitle>
+            <DialogTitle>Add member</DialogTitle>
             <DialogDescription>
-              {credentials
-                ? "This password is shown once. Copy it now, then give it to the member so they can sign in and choose their own."
-                : "Name, contact, plan. A one-time password is created so they can sign in and choose their own."}
+              They are on the roster immediately. No login. They check in by scanning the gym QR and entering this phone number.
             </DialogDescription>
           </DialogHeader>
-          {credentials ? (
-            <div className="space-y-3">
-              <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-950">
-                <p className="font-medium">{credentials.name}</p>
-                <p className="mt-1 text-xs">{credentials.email}</p>
-                <label className="mt-3 block text-xs font-medium" htmlFor="one-time-password">
-                  One-time password
-                </label>
-                <input
-                  id="one-time-password"
-                  readOnly
-                  value={credentials.password}
-                  className="mt-1 h-9 w-full rounded-lg border border-emerald-200 bg-white px-2.5 font-mono text-sm"
-                  onFocus={(event) => event.currentTarget.select()}
-                />
-                <p className="mt-2 text-xs">
-                  It will not be shown here again. The member must replace it on first sign-in.
-                </p>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => void copyPassword()}>
-                  {copied ? <Check /> : <Copy />}
-                  {copied ? "Copied" : "Copy password"}
-                </Button>
-                <Button type="button" onClick={closeDialog}>
-                  I&apos;ve copied it
-                </Button>
-              </DialogFooter>
+          <form onSubmit={register} className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="full_name">Full name</Label>
+              <input
+                id="full_name"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                required
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              />
             </div>
-          ) : (
-            <form onSubmit={register} className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="full_name">Full name</Label>
-                <input
-                  id="full_name"
-                  name="full_name"
-                  value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
-                  required
-                  autoComplete="name"
+            <div className="space-y-1.5">
+              <Label htmlFor="phone">Phone</Label>
+              <input
+                id="phone"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                required
+                placeholder="+220 …"
+                inputMode="tel"
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="plan_id">Plan</Label>
+              {activePlans.length === 0 ? (
+                <p className="text-sm text-muted-foreground">A default plan will be assigned automatically.</p>
+              ) : (
+                <select
+                  id="plan_id"
+                  value={planId}
+                  onChange={(event) => setPlanId(event.target.value)}
                   className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="email">Email</Label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    required
-                    autoComplete="email"
-                    className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone">Phone</Label>
-                  <input
-                    id="phone"
-                    name="phone"
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                    placeholder="+220 …"
-                    autoComplete="tel"
-                    className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="plan_id">Plan</Label>
-                {activePlans.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No saved plans yet. Registering will assign a default Day Pass or Monthly plan automatically.
-                  </p>
-                ) : (
-                  <select
-                    id="plan_id"
-                    name="plan_id"
-                    value={planId}
-                    onChange={(event) => setPlanId(event.target.value)}
-                    className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                  >
-                    {activePlans.map((plan) => (
-                      <option key={plan.id} value={plan.id}>
-                        {plan.name} · {money(plan.price, plan.currency)}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-              <DialogFooter>
-                <button
-                  type="submit"
-                  data-testid="register-member-submit"
-                  disabled={pending}
-                  className="inline-flex h-8 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
                 >
-                  {pending ? "Saving…" : "Register"}
-                </button>
-              </DialogFooter>
-            </form>
-          )}
+                  {activePlans.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} · {money(plan.price, plan.currency)}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <DialogFooter>
+              <button
+                type="submit"
+                disabled={pending}
+                className="inline-flex h-8 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {pending ? "Saving…" : "Add to roster"}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!activating} onOpenChange={(next) => !next && setActivating(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Activate membership?</DialogTitle>
+            <DialogDescription>
+              {activating?.full_name} · {activating?.plan ? money(activating.plan.price, activating.plan.currency) : ""}.
+              This records a desk payment and extends their plan. Use it for cash, Wave, or any demo payment you have already received.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActivating(null)}>
+              Cancel
+            </Button>
+            <Button onClick={() => void activate()} disabled={pending}>
+              {pending ? "Activating…" : "Activate payment"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -2,11 +2,11 @@
 
 Multi-tenant gym management for independent clubs. One platform, many gyms, hard walls between them.
 
-GymFlow follows the product spec for three mutually exclusive roles:
+GymFlow is kept simple on purpose. More modules can be added later without changing the tenant walls.
 
 - **Super Admin** onboards gym owners, reviews tenants, and sees platform-level commercial activity — not individual member records.
-- **Gym Owner** (and delegated staff) runs one gym: members, dues, plans, check-ins, and analytics.
-- **Gym Member** sees only their membership, payments, and attendance history.
+- **Gym Owner** creates an account, adds members, prints one door QR, checks people in, and activates payments.
+- **Gym Member** does not get a login. The owner adds them. They scan the printed QR with the phone camera, enter their phone number, check in, see days left, and can send a renewal payment to the desk.
 
 Classes and scheduling are intentionally out of scope.
 
@@ -57,13 +57,14 @@ Seeded demo password for every account below: `gymflow-demo`.
 | Gym owner (Bakau Powerhouse, active) | `maria.s@example.com` |
 | Front desk staff | `tom.h@example.org` |
 | Pending owner (Brikama Motion Studio) | `uma.s@example.org` |
-| Member (Lamin Jallow) | `victor.l@example.com` |
 
-Owner signup is public. The desk registers members and shares a one-time password. On first sign-in the member must choose their own password.
+Demo member (no login): **Lamin Jallow**, phone `301 1191`. Door page: [http://127.0.0.1:43127/g/demo-bakau-powerhouse](http://127.0.0.1:43127/g/demo-bakau-powerhouse).
+
+Owner signup is public. The desk adds members by name, phone, and plan. Print **Door QR** and put it at the entrance.
 
 ## Payments
 
-There is no live card processor in this build. A member **Pay dues** creates a pending demo payment. The gym owner accepts it from **Dues**, which marks it paid and extends membership. Checkout at `/pay/[id]` still lets the member send that payment to the gym (or simulate failure). Platform invoices use **Pay now**, which posts a signed webhook. Retries are idempotent.
+There is no live card processor. A member can tap **Pay to renew** on the QR page; that sends a pending demo payment to the desk. The owner **Activate**s it on the member list (or **Accept**s it under Dues), which marks it paid and extends membership. Platform invoices still use `/pay/[id]`.
 
 ## Stack
 

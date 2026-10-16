@@ -6,7 +6,7 @@ import type { UserRole } from "@prisma/client";
 const HOME: Record<UserRole, string> = {
   super_admin: "/admin",
   gym_owner: "/owner",
-  member: "/member",
+  member: "/",
 };
 
 export async function requirePageSession(role: UserRole): Promise<AuthContext> {

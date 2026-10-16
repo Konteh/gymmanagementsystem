@@ -30,6 +30,7 @@ export function serializeGym(gym: Gym) {
     status: gym.status,
     status_reason: gym.statusReason,
     settings: safeJson(gym.settingsJson),
+    check_in_token: gym.checkInToken,
     created_at: gym.createdAt.toISOString(),
   };
 }

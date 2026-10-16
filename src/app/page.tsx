@@ -29,11 +29,11 @@ const features = [
     value: "members",
     label: "Members",
     title: "Register a new member in under a minute",
-    copy: "Owners capture name, contact, plan, and an optional photo. No member self-signup, no extra fields, no class booking clutter. The desk stays the source of truth.",
+    copy: "Owners capture name, phone, and plan. No member account, no extra fields, no class booking clutter. The desk stays the source of truth.",
     points: [
-      "Quick registration with plan selection",
+      "Quick registration with plan and due date",
       "Active, inactive, and expired status at a glance",
-      "Front-desk check-in written to attendance history",
+      "Desk check-in or QR check-in at the door",
     ],
   },
   {
@@ -61,11 +61,11 @@ const features = [
   {
     value: "access",
     label: "Access",
-    title: "Three roles. Hard walls between them.",
-    copy: "Super Admin onboards gyms. Gym owners run the tenant. Members see only their membership, payments, and check-ins. Deny-by-default authorization sits next to every query.",
+    title: "Owners run the gym. Members just scan.",
+    copy: "Super Admin onboards gyms. Gym owners add people, print one QR, and activate payments. Members never create an account. Deny-by-default authorization sits next to every owner query.",
     points: [
-      "Mutual exclusivity between owner and member identities",
-      "Pending gyms cannot use tenant admin endpoints",
+      "One printed QR per gym, scanned with the phone camera",
+      "Phone number is how the door page finds the member",
       "No Classes module — on purpose, for this release",
     ],
   },
@@ -109,10 +109,10 @@ export default function LandingPage() {
           </h1>
           <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
             GymFlow hosts many gyms on one platform, with a hard wall between
-            tenants. Owners register members in a single short form, collect
-            dues, and watch retention. Members pay and review their own
-            check-ins. Super Admins onboard gyms — not rummage through member
-            files.
+            tenants.             Owners register members at the desk. Members never log in — they
+            scan a printed QR with the phone camera, check in, and renew if
+            they need to. Super Admins onboard gyms, not rummage through
+            member files.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link href="/signup" className={cn(buttonVariants({ size: "lg" }), "h-11 px-5")}>
@@ -239,7 +239,7 @@ export default function LandingPage() {
           />
           <RoleCard
             title="Gym Member"
-            body="See membership status, pay your own dues, and review check-in history. Thumb-friendly on a phone. No other member’s data. Ever."
+            body="No login. Scan the gym QR, enter your phone, check in, see days left, and pay to renew. The desk can also check you in and activate payment by hand."
           />
         </div>
         <div className="mt-10 flex flex-col items-start justify-between gap-4 rounded-2xl bg-[#F3F6FA] p-6 sm:flex-row sm:items-center">

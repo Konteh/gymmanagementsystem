@@ -39,7 +39,7 @@ export default function PayPage() {
     try {
       if (kind === "member" && outcome === "succeeded") {
         toast.success("Sent to your gym. The desk will accept this demo payment.");
-        window.location.assign("/member/payments");
+        window.location.assign("/");
         return;
       }
       await api(`/payments/${params.id}/demo-complete`, {
@@ -47,7 +47,7 @@ export default function PayPage() {
         body: JSON.stringify({ kind, outcome }),
       });
       toast.success(outcome === "succeeded" ? "Payment captured" : "Payment marked failed");
-      window.location.assign(kind === "platform" ? "/owner/settings" : "/member/payments");
+      window.location.assign(kind === "platform" ? "/owner/settings" : "/");
     } catch (err) {
       setPending(false);
       toast.error(err instanceof ClientApiError ? err.message : "Checkout failed");
