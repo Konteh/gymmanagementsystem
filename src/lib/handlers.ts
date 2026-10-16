@@ -399,6 +399,7 @@ export async function handleCreateGym({ request, requestId }: RouteCtx) {
       email: body.email,
       address: body.address,
       status: "pending",
+      checkInToken: newCheckInToken(),
     },
   });
   await writeAudit({

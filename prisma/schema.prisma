@@ -72,7 +72,9 @@ model Gym {
   status        GymStatus @default(pending)
   statusReason  String?
   settingsJson  String    @default("{}")
-  checkInToken  String    @unique @default(uuid())
+  // Optional so `db push` can add the column to gyms that already exist.
+  // New gyms always get a token in application code; seed backfills blanks.
+  checkInToken  String?   @unique
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

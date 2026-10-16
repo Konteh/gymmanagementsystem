@@ -5,6 +5,7 @@ import {
   type PaymentStatus,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
 import {
   DEFAULT_CURRENCY,
   DEFAULT_TIMEZONE,
@@ -15,6 +16,13 @@ import {
   PRODUCT_SHAPE,
 } from "../src/lib/constants";
 import { normalizePhone } from "../src/lib/phone";
+
+const DEMO_CHECK_IN: Record<string, string> = {
+  [IDS.ironforgeGym]: IDS.bakauCheckIn,
+  [IDS.peakGym]: IDS.brikamaCheckIn,
+  [IDS.harborGym]: IDS.harborCheckIn,
+  [IDS.northsideGym]: IDS.laminCheckIn,
+};
 
 const prisma = new PrismaClient();
 
@@ -40,12 +48,28 @@ async function resetLocalData() {
   await prisma.user.deleteMany();
 }
 
+async function ensureCheckInTokens() {
+  const gyms = await prisma.gym.findMany({
+    where: { OR: [{ checkInToken: null }, { checkInToken: "" }] },
+  });
+  for (const gym of gyms) {
+    await prisma.gym.update({
+      where: { id: gym.id },
+      data: { checkInToken: DEMO_CHECK_IN[gym.id] ?? randomBytes(16).toString("hex") },
+    });
+  }
+  if (gyms.length) {
+    console.log(`Filled check-in tokens for ${gyms.length} gym(s).`);
+  }
+}
+
 async function main() {
   const existing = await prisma.user.findUnique({ where: { id: IDS.superAdmin } });
   const shape = await prisma.systemSetting.findUnique({ where: { key: "product_shape" } }).catch(() => null);
   const currentShape = shape ? (JSON.parse(shape.value) as string) : null;
 
   if (existing && currentShape === PRODUCT_SHAPE) {
+    await ensureCheckInTokens();
     console.log("Desk QR seed already applied.");
     return;
   }
@@ -314,6 +338,7 @@ async function main() {
     ],
   });
 
+  await ensureCheckInTokens();
   console.log("GymFlow desk QR seed complete. Demo check-in: /g/demo-bakau-powerhouse");
 }
 

@@ -10,6 +10,17 @@ export function newCheckInToken() {
   return randomBytes(16).toString("hex");
 }
 
+export async function ensureGymCheckInToken<T extends { id: string; checkInToken: string | null }>(gym: T) {
+  if (gym.checkInToken) {
+    return { ...gym, checkInToken: gym.checkInToken };
+  }
+  const updated = await prisma.gym.update({
+    where: { id: gym.id },
+    data: { checkInToken: newCheckInToken() },
+  });
+  return { ...gym, checkInToken: updated.checkInToken as string };
+}
+
 export async function gymByCheckInToken(token: string) {
   const gym = await prisma.gym.findUnique({ where: { checkInToken: token } });
   if (!gym) throw new ApiError(404, "not_found", "That check-in code is not valid.");
